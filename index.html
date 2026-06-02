@@ -507,16 +507,26 @@ async function showImagePreview(filePath) {
   var html = '';
   html += infoItem('Format', info.format);
   html += infoItem('Dimensions', info.width + ' × ' + info.height + ' px');
+  if (info.aspectRatio) html += infoItem('Aspect Ratio', info.aspectRatio);
+  if (info.megapixels > 0) html += infoItem('Megapixels', info.megapixels.toFixed(2) + ' MP');
   html += infoItem('File Size', formatSize(file.size));
-  if (info.animated) { html += infoItem('Animated', 'Yes'); if (info.frames > 0) html += infoItem('Frames', info.frames); if (info.duration > 0) html += infoItem('Duration', info.duration.toFixed(2) + 's'); if (info.frames > 0 && info.duration > 0) html += infoItem('FPS', (info.frames / info.duration).toFixed(1)); }
+  if (info.compression) html += infoItem('Compression', info.compression);
+  if (info.colorType) html += infoItem('Color Type', info.colorType);
+  if (info.bitDepth > 0) html += infoItem('Bit Depth', info.bitDepth + '-bit');
+  if (info.hasAlpha) html += infoItem('Alpha', 'Yes');
+  if (info.gifVersion) html += infoItem('GIF Version', info.gifVersion);
+  if (info.animated) { html += infoItem('Animated', 'Yes'); if (info.frames > 0) html += infoItem('Frames', info.frames); if (info.duration > 0) html += infoItem('Duration', info.duration.toFixed(2) + 's'); if (info.frames > 0 && info.duration > 0) html += infoItem('FPS', (info.frames / info.duration).toFixed(1)); if (info.loopCount >= 0) html += infoItem('Loop Count', info.loopCount === 0 ? '∞ (Infinite)' : info.loopCount); }
   imgInfoPanel.innerHTML = html;
 }
 
 function infoItem(label, value) { return '<div class="img-info-item"><span class="label">' + label + '</span><span class="value">' + value + '</span></div>'; }
 function formatSize(bytes) { if (bytes < 1024) return bytes + ' B'; if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' KB'; return (bytes / 1048576).toFixed(2) + ' MB'; }
+function gcd(a, b) { return b === 0 ? a : gcd(b, a % b); }
+function formatAspectRatio(w, h) { if (!w || !h) return ''; var g = gcd(w, h); var rw = w / g, rh = h / g; if (rw > 100 || rh > 100) return (w / h).toFixed(2) + ':1'; return rw + ':' + rh; }
 
 async function analyzeImage(file) {
-  var info = { format: 'Unknown', width: 0, height: 0, animated: false, frames: 0, duration: 0 };
+  var info = { format: 'Unknown', width: 0, height: 0, animated: false, frames: 0, duration: 0,
+    aspectRatio: '', megapixels: 0, compression: '', hasAlpha: false, colorType: '', bitDepth: 0, loopCount: -1, gifVersion: '' };
   var name = file.name.toLowerCase(); var buffer = await file.arrayBuffer(); var bytes = new Uint8Array(buffer);
   if (name.endsWith('.gif') || (bytes[0] === 0x47 && bytes[1] === 0x49 && bytes[2] === 0x46)) { info.format = 'GIF'; parseGIF(bytes, info); }
   else if (name.endsWith('.webp') || (bytes[8] === 0x57 && bytes[9] === 0x45 && bytes[10] === 0x42 && bytes[11] === 0x50)) { info.format = 'WebP'; parseWebP(bytes, info); }
@@ -524,16 +534,28 @@ async function analyzeImage(file) {
   else if (name.endsWith('.jpg') || name.endsWith('.jpeg')) { info.format = 'JPEG'; await getDimensions(file, info); }
   else if (name.endsWith('.pag')) { info.format = 'PAG'; parsePAG(bytes, info); }
   if (info.width === 0) await getDimensions(file, info);
+  if (info.width && info.height) { info.aspectRatio = formatAspectRatio(info.width, info.height); info.megapixels = parseFloat((info.width * info.height / 1000000).toFixed(2)); }
   return info;
 }
 function getDimensions(file, info) { return new Promise(function(resolve) { var img = new Image(); img.onload = function() { info.width = img.naturalWidth; info.height = img.naturalHeight; resolve(); }; img.onerror = function() { resolve(); }; img.src = URL.createObjectURL(file); }); }
 
 function parseGIF(bytes, info) {
-  if (bytes.length < 13) return; info.width = bytes[6] | (bytes[7] << 8); info.height = bytes[8] | (bytes[9] << 8);
+  if (bytes.length < 13) return;
+  info.gifVersion = String.fromCharCode(bytes[3], bytes[4], bytes[5]);
+  info.width = bytes[6] | (bytes[7] << 8); info.height = bytes[8] | (bytes[9] << 8);
   var offset = 13; if (bytes[10] & 0x80) offset += 3 * (1 << ((bytes[10] & 0x07) + 1));
   var frames = 0, totalDelay = 0;
   while (offset < bytes.length) {
-    if (bytes[offset] === 0x21) { if (bytes[offset + 1] === 0xF9 && bytes[offset + 2] >= 4) { totalDelay += (bytes[offset + 4] | (bytes[offset + 5] << 8)) * 10; offset += bytes[offset + 2] + 4; } else { offset += 2; while (offset < bytes.length && bytes[offset] !== 0) offset += bytes[offset] + 1; offset++; } }
+    if (bytes[offset] === 0x21) {
+      if (bytes[offset + 1] === 0xF9 && bytes[offset + 2] >= 4) { totalDelay += (bytes[offset + 4] | (bytes[offset + 5] << 8)) * 10; offset += bytes[offset + 2] + 4; }
+      else if (bytes[offset + 1] === 0xFF && bytes[offset + 2] >= 15) {
+        var nsStart = offset + 3, nsLen = bytes[offset + 2];
+        if (String.fromCharCode.apply(null, Array.from(bytes.slice(nsStart, nsStart + 11))) === 'NETSCAPE2.0') {
+          info.loopCount = bytes[nsStart + 12] | (bytes[nsStart + 13] << 8);
+        }
+        offset += bytes[offset + 2] + 3;
+      } else { offset += 2; while (offset < bytes.length && bytes[offset] !== 0) offset += bytes[offset] + 1; offset++; }
+    }
     else if (bytes[offset] === 0x2C) { frames++; offset += 10; if (bytes[offset - 1] & 0x80) offset += 3 * (1 << ((bytes[offset - 1] & 0x07) + 1)); offset++; while (offset < bytes.length && bytes[offset] !== 0) offset += bytes[offset] + 1; offset++; }
     else if (bytes[offset] === 0x3B) { break; } else { offset++; }
   }
@@ -545,8 +567,10 @@ function parseWebP(bytes, info) {
   while (offset < bytes.length - 8) {
     var chunk = String.fromCharCode(bytes[offset], bytes[offset+1], bytes[offset+2], bytes[offset+3]);
     var size = bytes[offset+4] | (bytes[offset+5]<<8) | (bytes[offset+6]<<16) | (bytes[offset+7]<<24);
-    if (chunk === 'VP8X') { info.animated = !!(bytes[offset + 8] & 0x02); info.width = ((bytes[offset+12] | (bytes[offset+13]<<8) | (bytes[offset+14]<<16)) & 0xFFFFFF) + 1; info.height = ((bytes[offset+15] | (bytes[offset+16]<<8) | (bytes[offset+17]<<16)) & 0xFFFFFF) + 1; }
-    else if (chunk === 'VP8 ') { if (!info.width && size > 10) { info.width = (bytes[offset+14] | (bytes[offset+15]<<8)) & 0x3FFF; info.height = (bytes[offset+16] | (bytes[offset+17]<<8)) & 0x3FFF; } }
+    if (chunk === 'VP8X') { info.animated = !!(bytes[offset + 8] & 0x02); info.hasAlpha = !!(bytes[offset + 8] & 0x10); info.width = ((bytes[offset+12] | (bytes[offset+13]<<8) | (bytes[offset+14]<<16)) & 0xFFFFFF) + 1; info.height = ((bytes[offset+15] | (bytes[offset+16]<<8) | (bytes[offset+17]<<16)) & 0xFFFFFF) + 1; }
+    else if (chunk === 'VP8 ') { info.compression = 'Lossy'; if (!info.width && size > 10) { info.width = (bytes[offset+14] | (bytes[offset+15]<<8)) & 0x3FFF; info.height = (bytes[offset+16] | (bytes[offset+17]<<8)) & 0x3FFF; } }
+    else if (chunk === 'VP8L') { info.compression = 'Lossless'; }
+    else if (chunk === 'ANIM') { info.loopCount = bytes[offset+8] | (bytes[offset+9] << 8); }
     else if (chunk === 'ANMF') { info.frames++; frameDurations.push(bytes[offset+20] | (bytes[offset+21] << 8)); }
     offset += 8 + size + (size & 1);
   }
@@ -557,9 +581,13 @@ function parseWebP(bytes, info) {
 
 function parsePNG(bytes, info) {
   if (bytes.length < 33) return; info.width = (bytes[16]<<24)|(bytes[17]<<16)|(bytes[18]<<8)|bytes[19]; info.height = (bytes[20]<<24)|(bytes[21]<<16)|(bytes[22]<<8)|bytes[23];
+  info.bitDepth = bytes[24]; var colorType = bytes[25];
+  var COLOR_TYPES = ['Grayscale', '', 'RGB', 'Indexed', 'Grayscale+Alpha', '', 'RGBA'];
+  info.colorType = COLOR_TYPES[colorType] || ('Type ' + colorType);
+  info.hasAlpha = (colorType === 4 || colorType === 6);
   var offset = 8, totalDelay = 0;
   while (offset < bytes.length - 8) { var len = (bytes[offset]<<24)|(bytes[offset+1]<<16)|(bytes[offset+2]<<8)|bytes[offset+3]; var type = String.fromCharCode(bytes[offset+4],bytes[offset+5],bytes[offset+6],bytes[offset+7]);
-    if (type === 'acTL') { info.animated = true; info.format = 'APNG'; info.frames = (bytes[offset+8]<<24)|(bytes[offset+9]<<16)|(bytes[offset+10]<<8)|bytes[offset+11]; }
+    if (type === 'acTL') { info.animated = true; info.format = 'APNG'; info.frames = (bytes[offset+8]<<24)|(bytes[offset+9]<<16)|(bytes[offset+10]<<8)|bytes[offset+11]; info.loopCount = (bytes[offset+12]<<24)|(bytes[offset+13]<<16)|(bytes[offset+14]<<8)|bytes[offset+15]; }
     else if (type === 'fcTL') { var dn = (bytes[offset+28]<<8)|bytes[offset+29]; var dd = (bytes[offset+30]<<8)|bytes[offset+31]; if (dd === 0) dd = 100; totalDelay += dn / dd; }
     offset += 12 + len; }
   info.duration = totalDelay;
