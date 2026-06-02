@@ -152,6 +152,7 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--t
 .doc-preview-container{position:absolute;inset:0;display:flex;flex-direction:column;overflow:hidden}
 .doc-preview-container.hidden{display:none}
 #doc-iframe{flex:1;width:100%;border:none;background:#fff}
+#doc-embed{flex:1;width:100%;border:none;display:none;min-height:0}
 </style>
 </head>
 <body>
@@ -281,6 +282,7 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--t
     <div class="doc-preview-container hidden" id="preview-doc">
       <div class="file-preview-header" id="doc-info-header"></div>
       <iframe id="doc-iframe" sandbox="allow-scripts allow-same-origin"></iframe>
+      <object id="doc-embed" type="application/pdf"></object>
     </div>
   </div>
 </div>
@@ -350,6 +352,7 @@ var fileContent = document.getElementById('file-content');
 var fileHex = document.getElementById('file-hex');
 var previewDoc = document.getElementById('preview-doc');
 var docIframe = document.getElementById('doc-iframe');
+var docEmbed = document.getElementById('doc-embed');
 var docInfoHeader = document.getElementById('doc-info-header');
 
 var TAB_MODES = ['lottie', 'image', 'video', 'file'];
@@ -691,7 +694,8 @@ function resetAll() {
   imgPreviewEl.src = ''; imgInfoPanel.innerHTML = '';
   videoPlayer.src = ''; videoInfoPanel.innerHTML = '';
   fileContent.innerHTML = ''; fileHex.innerHTML = ''; fileHex.classList.add('hidden'); filePreviewHeader.innerHTML = '';
-  docIframe.src = ''; docIframe.srcdoc = ''; docInfoHeader.innerHTML = '';
+  docIframe.src = ''; docIframe.srcdoc = ''; docEmbed.data = ''; docInfoHeader.innerHTML = '';
+  var oldPdfIframe = document.querySelector('.pdf-iframe'); if (oldPdfIframe) oldPdfIframe.remove();
   modeState[currentMode] = { fileMap: new Map(), animGroups: [], hasContent: false, activeFile: null };
   hideAllPreviews();
   if (currentMode === 'lottie') dropZoneLottie.classList.remove('hidden');
@@ -764,8 +768,19 @@ async function showDocPreview(file, type) {
   hideAllPreviews(); previewDoc.classList.remove('hidden'); controls.classList.add('hidden');
   infoBadge.style.display = '';
   infoBadge.textContent = file.name + ' · ' + formatSize(file.size);
-  var url = URL.createObjectURL(file);
-  docIframe.src = url;
+  docIframe.style.display = 'none';
+  docIframe.srcdoc = '';
+  docEmbed.style.display = 'none';
+  docEmbed.data = '';
+  // Create a fresh iframe without any sandbox for PDF
+  var container = document.getElementById('preview-doc');
+  var oldIframe = container.querySelector('.pdf-iframe');
+  if (oldIframe) oldIframe.remove();
+  var pdfIframe = document.createElement('iframe');
+  pdfIframe.className = 'pdf-iframe';
+  pdfIframe.style.cssText = 'flex:1;width:100%;border:none;background:#fff';
+  pdfIframe.src = URL.createObjectURL(file);
+  container.appendChild(pdfIframe);
   var headerHtml = '';
   headerHtml += '<span class="fph-item"><span class="fph-label">Name:</span><span class="fph-value">' + file.name + '</span></span>';
   headerHtml += '<span class="fph-item"><span class="fph-label">Format:</span><span class="fph-value" style="color:var(--accent)">' + type.toUpperCase() + '</span></span>';
@@ -821,6 +836,10 @@ async function showEpubPreview(file) {
       else { bodyHtml += contentText; }
     }
     var fullHtml = '<!DOCTYPE html><html><head><meta charset="utf-8"><style>' + cssText + ' body{font-family:Georgia,serif;font-size:16px;line-height:1.8;color:#333;padding:24px;max-width:720px;margin:0 auto} img{max-width:100%;height:auto} ' + '</style></head><body>' + bodyHtml + '</body></html>';
+    docIframe.style.display = '';
+    docEmbed.style.display = 'none';
+    docEmbed.data = '';
+    docIframe.setAttribute('sandbox', 'allow-scripts allow-same-origin');
     docIframe.srcdoc = fullHtml;
     docIframe.src = '';
     var headerHtml = '';
