@@ -76,6 +76,7 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--t
 .drop-text{text-align:center}
 .drop-text h2{font-size:18px;font-weight:600;margin-bottom:6px;letter-spacing:-0.4px}
 .drop-text p{font-size:13px;color:var(--text-muted);font-weight:400}
+.drop-hint{font-size:11px;color:var(--text-muted);opacity:.7;margin-top:-8px;letter-spacing:.2px}
 .drop-actions{position:relative;margin-top:12px}
 .select-btn{padding:10px 22px;border-radius:10px;border:1px solid var(--border-hover);background:var(--bg-secondary);color:var(--text);cursor:pointer;font-size:13px;font-weight:500;font-family:inherit;transition:all .25s ease;display:flex;align-items:center;gap:8px}
 .select-btn:hover{background:var(--accent);border-color:var(--accent);color:#fff;transform:translateY(-1px);box-shadow:0 6px 20px var(--accent-glow)}
@@ -153,6 +154,7 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--t
         <h2>Lottie Preview</h2>
         <p>Folder / .zip / .json</p>
       </div>
+      <div class="drop-hint">Drag files here or click Browse · Supports JSON with external images folder</div>
       <div class="drop-actions">
         <button class="select-btn" onclick="toggleMenu('lottie')">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
@@ -172,6 +174,7 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--t
         <h2>Image Preview</h2>
         <p>WebP / APNG / GIF / PAG / PNG / JPG</p>
       </div>
+      <div class="drop-hint">Drag files here or click Browse · Shows format, frames, duration & FPS</div>
       <div class="drop-actions">
         <button class="select-btn" onclick="toggleMenu('image')">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
