@@ -684,7 +684,7 @@ function parseExifData(data, info) {
 
   if (read16(2) !== 0x002A) return;
   var ifdOffset = read32(4);
-  var gpsIfdOffset = 0;
+  var gpsIfdOffset = 0, exifIfdOffset = 0;
 
   function parseIFD(off) {
     if (off + 2 > data.length) return;
@@ -698,14 +698,16 @@ function parseExifData(data, info) {
         else info.camera = (info.camera ? info.camera + ' ' : '') + str;
       }
       if (tag === 0x0132 || tag === 0x9003) { info.dateTime = readString(valOff, cnt).replace(/(\d{4}):(\d{2}):(\d{2})/, '$1-$2-$3'); }
+      if (tag === 0x8769) { exifIfdOffset = read32(off+8); }
       if (tag === 0x8825) { gpsIfdOffset = read32(off+8); }
       off += 12;
     }
   }
 
   parseIFD(ifdOffset);
-  var nextIfd = read32(ifdOffset + 2 + read16(ifdOffset) * 12);
-  if (nextIfd > 0 && nextIfd < data.length) parseIFD(nextIfd);
+  if (exifIfdOffset > 0 && exifIfdOffset < data.length) parseIFD(exifIfdOffset);
+  var nextIfdOff = ifdOffset + 2 + read16(ifdOffset) * 12;
+  if (nextIfdOff + 4 <= data.length) { var nextIfd = read32(nextIfdOff); if (nextIfd > 0 && nextIfd < data.length) parseIFD(nextIfd); }
 
   if (gpsIfdOffset > 0 && gpsIfdOffset + 2 < data.length) {
     var gpsCount = read16(gpsIfdOffset); var gOff = gpsIfdOffset + 2;
@@ -786,57 +788,37 @@ function parsePNG(bytes, info) {
 function parsePAG(bytes, info) { info.animated = true; if (bytes.length > 20) { info.frames = 0; info.duration = 0; } }
 
 function parseHEIF(bytes, info) {
-  var offset = 0;
   function read32At(off) { return (bytes[off]<<24)|(bytes[off+1]<<16)|(bytes[off+2]<<8)|bytes[off+3]; }
-  function typeAt(off) { return String.fromCharCode(bytes[off+4], bytes[off+5], bytes[off+6], bytes[off+7]); }
-  function findBox(start, end, target) {
-    var off = start;
-    while (off + 8 <= end) {
-      var size = read32At(off);
-      if (size < 8) break;
-      if (typeAt(off) === target) return { offset: off, size: size };
-      off += size;
+  var scanEnd = Math.min(bytes.length, 500000);
+
+  // Find all ispe boxes - use largest dimensions (main image, not thumbnail)
+  var maxW = 0, maxH = 0;
+  for (var i = 0; i < scanEnd - 20; i++) {
+    if (bytes[i+4] === 0x69 && bytes[i+5] === 0x73 && bytes[i+6] === 0x70 && bytes[i+7] === 0x65) {
+      var w = read32At(i + 12), h = read32At(i + 16);
+      if (w > 0 && h > 0 && w < 65536 && h < 65536 && w * h > maxW * maxH) { maxW = w; maxH = h; }
     }
-    return null;
   }
-  function findBoxInFullBox(start, end, target) {
-    return findBox(start + 4, end, target);
-  }
-  var meta = findBox(0, Math.min(bytes.length, 200000), 'meta');
-  if (!meta) return;
-  var metaEnd = meta.offset + meta.size;
-  var metaContent = meta.offset + 12;
-  var iprp = findBox(metaContent, metaEnd, 'iprp');
-  if (iprp) {
-    var ipco = findBox(iprp.offset + 8, iprp.offset + iprp.size, 'ipco');
-    if (ipco) {
-      var ipcoEnd = ipco.offset + ipco.size;
-      var off = ipco.offset + 8;
-      while (off + 8 <= ipcoEnd) {
-        var bSize = read32At(off); var bType = typeAt(off);
-        if (bSize < 8) break;
-        if (bType === 'ispe' && off + 20 <= ipcoEnd) {
-          info.width = read32At(off + 12);
-          info.height = read32At(off + 16);
-          break;
-        }
-        off += bSize;
+  if (maxW > 0) { info.width = maxW; info.height = maxH; }
+
+  // Find EXIF: scan for "Exif\x00\x00" + TIFF header
+  for (var i = 0; i < scanEnd - 14; i++) {
+    if (bytes[i] === 0x45 && bytes[i+1] === 0x78 && bytes[i+2] === 0x69 && bytes[i+3] === 0x66 && bytes[i+4] === 0x00 && bytes[i+5] === 0x00) {
+      var ts = i + 6;
+      if ((bytes[ts] === 0x49 && bytes[ts+1] === 0x49) || (bytes[ts] === 0x4D && bytes[ts+1] === 0x4D)) {
+        parseExifData(bytes.slice(ts), info); return;
       }
     }
   }
-  var off2 = metaContent;
-  while (off2 + 8 <= metaEnd) {
-    var bSize = read32At(off2); var bType = typeAt(off2);
-    if (bSize < 8) break;
-    if (bType === 'iinf' || bType === 'iloc' || bType === 'iprp') { off2 += bSize; continue; }
-    if (bType === 'Exif') {
-      var exifStart = off2 + 8;
-      var prefixLen = read32At(exifStart);
-      var tiffStart = exifStart + 4 + prefixLen;
-      if (tiffStart + 8 < off2 + bSize) { parseExifData(bytes.slice(tiffStart, off2 + bSize), info); }
-      return;
+  // Fallback: scan for TIFF header with valid IFD offset
+  for (var i = 100; i < scanEnd - 12; i++) {
+    var isTiff = (bytes[i] === 0x49 && bytes[i+1] === 0x49 && bytes[i+2] === 0x2A && bytes[i+3] === 0x00) ||
+                 (bytes[i] === 0x4D && bytes[i+1] === 0x4D && bytes[i+2] === 0x00 && bytes[i+3] === 0x2A);
+    if (isTiff) {
+      var le = bytes[i] === 0x49;
+      var ifdOff = le ? (bytes[i+4]|(bytes[i+5]<<8)|(bytes[i+6]<<16)|(bytes[i+7]<<24)) : read32At(i+4);
+      if (ifdOff >= 8 && ifdOff < 65536) { parseExifData(bytes.slice(i), info); return; }
     }
-    off2 += bSize;
   }
 }
 
