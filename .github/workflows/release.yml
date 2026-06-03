@@ -5,18 +5,25 @@ on:
     tags:
       - 'v*'
 
+permissions:
+  contents: write
+
 jobs:
   build:
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
+
       - run: npm install
-      - run: npx electron-builder --mac dmg
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      - uses: softprops/action-gh-release@v2
+
+      - run: npx electron-builder --mac dmg --publish=never
+
+      - name: Release
+        uses: softprops/action-gh-release@v2
         with:
           files: dist/*.dmg
+          generate_release_notes: true
