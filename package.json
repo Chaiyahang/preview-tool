@@ -5,6 +5,7 @@
   "main": "electron-main.js",
   "scripts": {
     "start": "electron .",
+    "build": "echo static-site-no-build",
     "build:electron": "electron-builder --mac",
     "build:electron:dmg": "electron-builder --mac dmg"
   },
