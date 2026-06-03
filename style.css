@@ -237,12 +237,12 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--t
   .select-btn{padding:8px 16px;font-size:12px}
 
   /* Image info panel — single column */
-  .img-info-panel{padding:10px 14px;gap:8px 16px;border-radius:10px;flex-direction:column;max-width:none;margin-top:12px}
+  .img-info-panel{padding:10px 14px;gap:8px 16px;border-radius:10px;flex-direction:column;max-width:none;margin-top:12px;flex-shrink:0}
   .img-info-item .value{font-size:13px}
   .img-info-item .label{font-size:8px}
 
-  /* Image preview */
-  .img-preview-container{padding:12px}
+  /* Image preview — scrollable */
+  .img-preview-container{padding:12px;overflow-y:auto;-webkit-overflow-scrolling:touch;justify-content:flex-start}
 
   /* File preview — horizontal scroll */
   .file-content{font-size:12px;overflow-x:auto}
@@ -251,9 +251,12 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--t
   .file-hex{font-size:11px;overflow-x:auto;padding:12px}
   .file-preview-header{padding:10px 14px;font-size:10px;gap:6px 14px}
 
-  /* Video preview */
-  .video-preview-container{padding:12px}
-  #video-player{max-width:100%;max-height:60%}
+  /* Video preview — scrollable */
+  .video-preview-container{padding:12px;overflow-y:auto;-webkit-overflow-scrolling:touch;justify-content:flex-start}
+  #video-player{max-width:100%;max-height:60vh;flex-shrink:0}
+
+  /* Lottie preview — scrollable on small screens */
+  .preview-container{overflow-y:auto;-webkit-overflow-scrolling:touch}
 
   /* SQLite viewer — horizontal scroll */
   .sqlite-viewer{padding:12px;overflow-x:auto}
