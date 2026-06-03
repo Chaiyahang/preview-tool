@@ -28,17 +28,19 @@ export function reverseGeocode(lat, lng) {
 }
 
 export async function analyzeImage(file) {
+  var callId = previewCallId;
   var info = { format: 'Unknown', width: 0, height: 0, animated: false, frames: 0, duration: 0,
     aspectRatio: '', megapixels: 0, compression: '', hasAlpha: false, colorType: '', bitDepth: 0, loopCount: -1, gifVersion: '',
     gps: null, camera: '', dateTime: '' };
   var name = file.name.toLowerCase(); var buffer = await file.arrayBuffer(); var bytes = new Uint8Array(buffer);
+  if (previewCallId !== callId) return info;
   if (name.endsWith('.gif') || (bytes[0] === 0x47 && bytes[1] === 0x49 && bytes[2] === 0x46)) { info.format = 'GIF'; parseGIF(bytes, info); }
   else if (name.endsWith('.webp') || (bytes[8] === 0x57 && bytes[9] === 0x45 && bytes[10] === 0x42 && bytes[11] === 0x50)) { info.format = 'WebP'; parseWebP(bytes, info); }
   else if (name.endsWith('.png') || name.endsWith('.apng') || (bytes[0] === 0x89 && bytes[1] === 0x50)) { info.format = 'PNG'; parsePNG(bytes, info); }
   else if (name.endsWith('.jpg') || name.endsWith('.jpeg')) { info.format = 'JPEG'; parseEXIF(bytes, info); await getDimensions(file, info); }
   else if (name.endsWith('.tiff') || name.endsWith('.tif') || (bytes[0] === 0x49 && bytes[1] === 0x49 && bytes[2] === 0x2A && bytes[3] === 0x00) || (bytes[0] === 0x4D && bytes[1] === 0x4D && bytes[2] === 0x00 && bytes[3] === 0x2A)) { info.format = 'TIFF'; parseExifData(bytes, info); await getDimensions(file, info); }
   else if (name.endsWith('.heic') || name.endsWith('.heif') || name.endsWith('.avif')) { info.format = name.endsWith('.avif') ? 'AVIF' : 'HEIC'; parseHEIF(bytes, info); }
-  else if (name.endsWith('.pag')) { info.format = 'PAG'; parsePAG(bytes, info); await parsePAGAsync(buffer, info); }
+  else if (name.endsWith('.pag')) { info.format = 'PAG'; parsePAG(bytes, info); if (previewCallId === callId) await parsePAGAsync(buffer, info); }
   if (info.width === 0) await getDimensions(file, info);
   if (info.width && info.height) { info.aspectRatio = formatAspectRatio(info.width, info.height); info.megapixels = parseFloat((info.width * info.height / 1000000).toFixed(2)); }
   return info;
@@ -129,8 +131,10 @@ var activePAGView = null;
 var activePAGFile = null;
 
 export function cleanupPAGView() {
-  if (activePAGView) { activePAGView.stop(); activePAGView.destroy(); activePAGView = null; }
-  if (activePAGFile) { activePAGFile.destroy(); activePAGFile = null; }
+  try { if (activePAGView) { activePAGView.stop(); activePAGView.destroy(); } } catch(e) {}
+  activePAGView = null;
+  try { if (activePAGFile) { activePAGFile.destroy(); } } catch(e) {}
+  activePAGFile = null;
   var oldCanvas = document.getElementById('pag-canvas');
   if (oldCanvas) oldCanvas.remove();
   var imgEl = document.getElementById('img-preview-el');
