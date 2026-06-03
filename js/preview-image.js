@@ -144,3 +144,47 @@ export function cleanupPAGView() {
   var imgEl = document.getElementById('img-preview-el');
   if (imgEl) imgEl.style.display = '';
 }
+
+// Image zoom viewer
+var zoomScale = 1, zoomX = 0, zoomY = 0, isDragging = false, dragStartX = 0, dragStartY = 0, startZoomX = 0, startZoomY = 0;
+
+function initZoom() {
+  var overlay = document.getElementById('img-zoom-overlay');
+  var zoomEl = document.getElementById('img-zoom-el');
+  var zoomLevel = document.getElementById('zoom-level');
+
+  document.getElementById('img-preview-el').addEventListener('click', openZoom);
+  document.getElementById('img-zoom-close').addEventListener('click', closeZoom);
+  document.getElementById('zoom-in').addEventListener('click', function() { setZoom(zoomScale * 1.5); });
+  document.getElementById('zoom-out').addEventListener('click', function() { setZoom(zoomScale / 1.5); });
+  document.getElementById('zoom-fit').addEventListener('click', function() { zoomX = 0; zoomY = 0; setZoom(1); });
+  overlay.addEventListener('click', function(e) { if (e.target === overlay) closeZoom(); });
+  overlay.addEventListener('wheel', function(e) { e.preventDefault(); setZoom(zoomScale * (e.deltaY < 0 ? 1.2 : 1/1.2)); }, { passive: false });
+
+  zoomEl.addEventListener('mousedown', function(e) { e.preventDefault(); isDragging = true; dragStartX = e.clientX; dragStartY = e.clientY; startZoomX = zoomX; startZoomY = zoomY; zoomEl.classList.add('dragging'); });
+  document.addEventListener('mousemove', function(e) { if (!isDragging) return; zoomX = startZoomX + (e.clientX - dragStartX); zoomY = startZoomY + (e.clientY - dragStartY); applyTransform(); });
+  document.addEventListener('mouseup', function() { isDragging = false; zoomEl.classList.remove('dragging'); });
+  document.addEventListener('keydown', function(e) { if (e.key === 'Escape' && overlay.classList.contains('active')) closeZoom(); });
+
+  function openZoom() {
+    var src = document.getElementById('img-preview-el').src;
+    if (!src) return;
+    zoomEl.src = src;
+    zoomScale = 1; zoomX = 0; zoomY = 0;
+    overlay.classList.add('active');
+    zoomLevel.textContent = '100%';
+    applyTransform();
+  }
+
+  function closeZoom() { overlay.classList.remove('active'); zoomEl.src = ''; }
+
+  function setZoom(s) {
+    zoomScale = Math.max(0.1, Math.min(20, s));
+    zoomLevel.textContent = Math.round(zoomScale * 100) + '%';
+    applyTransform();
+  }
+
+  function applyTransform() { zoomEl.style.transform = 'translate(' + zoomX + 'px,' + zoomY + 'px) scale(' + zoomScale + ')'; }
+}
+
+initZoom();
