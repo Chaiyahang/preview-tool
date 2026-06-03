@@ -2,6 +2,24 @@
 import { state, hideAllPreviews } from './main.js';
 import { formatSize, infoItem } from './preview-image.js';
 
+// Strip line numbers from copy — ::before counters get included in selection
+document.addEventListener('copy', function(e) {
+  var fileContent = document.getElementById('file-content');
+  if (!fileContent || !fileContent.contains(window.getSelection().anchorNode)) return;
+  var sel = window.getSelection();
+  if (!sel.rangeCount) return;
+  var fragment = sel.getRangeAt(0).cloneContents();
+  var lines = fragment.querySelectorAll('.line');
+  var text;
+  if (lines.length > 0) {
+    text = Array.from(lines).map(function(l) { return l.textContent; }).join('\n');
+  } else {
+    text = sel.toString();
+  }
+  e.preventDefault();
+  e.clipboardData.setData('text/plain', text);
+});
+
 function isBinary(buffer) {
   var bytes = new Uint8Array(buffer).slice(0, 512);
   var nonPrintable = 0;
@@ -192,9 +210,26 @@ export async function showFilePreview(filePath) {
     fileHex.classList.add('hidden');
     fileHex.innerHTML = '';
     fileContent.style.display = '';
-    var escaped = text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-    fileContent.innerHTML = '<span class="line">' + escaped.split('\n').join('</span>\n<span class="line">') + '</span>';
+    if (isJson) {
+      fileContent.innerHTML = lines.map(function(line) { return '<span class="line">' + highlightJson(line) + '</span>'; }).join('\n');
+    } else {
+      var escaped = text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+      fileContent.innerHTML = '<span class="line">' + escaped.split('\n').join('</span>\n<span class="line">') + '</span>';
+    }
   }
+}
+
+function highlightJson(line) {
+  return line.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/("(?:\\.|[^"\\])*")\s*:/g, '<span class="json-key">$1</span>:')
+    .replace(/:\s*("(?:\\.|[^"\\])*")/g, ': <span class="json-string">$1</span>')
+    .replace(/:\s*(-?\d+\.?\d*(?:[eE][+-]?\d+)?)/g, ': <span class="json-number">$1</span>')
+    .replace(/:\s*(true|false)/g, ': <span class="json-bool">$1</span>')
+    .replace(/:\s*(null)/g, ': <span class="json-null">$1</span>')
+    .replace(/^(\s*"(?:\\.|[^"\\])*")(?!.*:)/gm, '<span class="json-string">$1</span>')
+    .replace(/^(\s*)(-?\d+\.?\d*(?:[eE][+-]?\d+)?)(,?)$/gm, '$1<span class="json-number">$2</span>$3')
+    .replace(/^(\s*)(true|false)(,?)$/gm, '$1<span class="json-bool">$2</span>$3')
+    .replace(/^(\s*)(null)(,?)$/gm, '$1<span class="json-null">$2</span>$3');
 }
 
 async function showSqlitePreview(file) {

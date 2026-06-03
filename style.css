@@ -150,6 +150,13 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--t
 .file-content .line::before{content:counter(line);position:absolute;left:0;width:44px;text-align:right;color:var(--text-muted);font-size:11px;user-select:none;-webkit-user-select:none}
 .file-content .line:hover{background:var(--bg-secondary)}
 .file-content .line.hl{background:var(--accent-subtle)}
+
+/* JSON syntax highlighting */
+.json-key{color:#7dd3fc}
+.json-string{color:#86efac}
+.json-number{color:#fbbf24}
+.json-bool{color:#c084fc}
+.json-null{color:#f87171;font-style:italic}
 .file-hex{flex:1;overflow:auto;padding:16px 20px;font-family:'JetBrains Mono',monospace;font-size:13px;line-height:1.7;color:var(--text)}
 .file-hex .hex-line{display:block}
 .file-hex .hex-offset{color:var(--accent);margin-right:16px}
