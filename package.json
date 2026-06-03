@@ -21,6 +21,7 @@
       "icon": "icon.icns"
     },
     "files": [
+      "electron-main.js",
       "index.html",
       "style.css",
       "js/**/*"
