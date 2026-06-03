@@ -8,6 +8,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/lottie-web/5.12.2/lottie.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/heic2any@0.0.4/dist/heic2any.min.js"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 :root{
@@ -606,7 +607,11 @@ async function showImagePreview(filePath) {
   document.querySelectorAll('.tree-item').forEach(function(el) { el.classList.toggle('active', el.title === filePath); });
   var file = fileMap.get(filePath); if (!file) return;
   hideAllPreviews(); previewImage.classList.remove('hidden'); controls.classList.add('hidden');
-  imgPreviewEl.src = URL.createObjectURL(file);
+  var lower = filePath.toLowerCase();
+  if (lower.endsWith('.heic') || lower.endsWith('.heif')) {
+    try { var blob = await heic2any({ blob: file, toType: 'image/jpeg', quality: 0.92 }); imgPreviewEl.src = URL.createObjectURL(blob); }
+    catch(e) { imgPreviewEl.src = ''; }
+  } else { imgPreviewEl.src = URL.createObjectURL(file); }
   var info = await analyzeImage(file);
   infoBadge.style.display = '';
   infoBadge.textContent = info.format + (info.animated ? ' (Animated)' : '') + '  ·  ' + info.width + 'x' + info.height;
@@ -643,7 +648,7 @@ async function analyzeImage(file) {
   else if (name.endsWith('.png') || name.endsWith('.apng') || (bytes[0] === 0x89 && bytes[1] === 0x50)) { info.format = 'PNG'; parsePNG(bytes, info); }
   else if (name.endsWith('.jpg') || name.endsWith('.jpeg')) { info.format = 'JPEG'; parseEXIF(bytes, info); await getDimensions(file, info); }
   else if (name.endsWith('.tiff') || name.endsWith('.tif') || (bytes[0] === 0x49 && bytes[1] === 0x49 && bytes[2] === 0x2A && bytes[3] === 0x00) || (bytes[0] === 0x4D && bytes[1] === 0x4D && bytes[2] === 0x00 && bytes[3] === 0x2A)) { info.format = 'TIFF'; parseExifData(bytes, info); await getDimensions(file, info); }
-  else if (name.endsWith('.heic') || name.endsWith('.heif') || name.endsWith('.avif')) { info.format = name.endsWith('.avif') ? 'AVIF' : 'HEIC'; parseHEIF(bytes, info); await getDimensions(file, info); }
+  else if (name.endsWith('.heic') || name.endsWith('.heif') || name.endsWith('.avif')) { info.format = name.endsWith('.avif') ? 'AVIF' : 'HEIC'; parseHEIF(bytes, info); }
   else if (name.endsWith('.pag')) { info.format = 'PAG'; parsePAG(bytes, info); }
   if (info.width === 0) await getDimensions(file, info);
   if (info.width && info.height) { info.aspectRatio = formatAspectRatio(info.width, info.height); info.megapixels = parseFloat((info.width * info.height / 1000000).toFixed(2)); }
@@ -782,34 +787,56 @@ function parsePAG(bytes, info) { info.animated = true; if (bytes.length > 20) { 
 
 function parseHEIF(bytes, info) {
   var offset = 0;
-  function searchBox(start, end, target) {
+  function read32At(off) { return (bytes[off]<<24)|(bytes[off+1]<<16)|(bytes[off+2]<<8)|bytes[off+3]; }
+  function typeAt(off) { return String.fromCharCode(bytes[off+4], bytes[off+5], bytes[off+6], bytes[off+7]); }
+  function findBox(start, end, target) {
     var off = start;
     while (off + 8 <= end) {
-      var size = (bytes[off]<<24)|(bytes[off+1]<<16)|(bytes[off+2]<<8)|bytes[off+3];
-      var type = String.fromCharCode(bytes[off+4], bytes[off+5], bytes[off+6], bytes[off+7]);
+      var size = read32At(off);
       if (size < 8) break;
-      if (type === target) return { offset: off, size: size };
+      if (typeAt(off) === target) return { offset: off, size: size };
       off += size;
     }
     return null;
   }
-  var meta = searchBox(0, Math.min(bytes.length, 100000), 'meta');
+  function findBoxInFullBox(start, end, target) {
+    return findBox(start + 4, end, target);
+  }
+  var meta = findBox(0, Math.min(bytes.length, 200000), 'meta');
   if (!meta) return;
-  var metaStart = meta.offset + 12, metaEnd = meta.offset + meta.size;
-  var off = metaStart;
-  while (off + 8 <= metaEnd) {
-    var bSize = (bytes[off]<<24)|(bytes[off+1]<<16)|(bytes[off+2]<<8)|bytes[off+3];
-    var bType = String.fromCharCode(bytes[off+4], bytes[off+5], bytes[off+6], bytes[off+7]);
+  var metaEnd = meta.offset + meta.size;
+  var metaContent = meta.offset + 12;
+  var iprp = findBox(metaContent, metaEnd, 'iprp');
+  if (iprp) {
+    var ipco = findBox(iprp.offset + 8, iprp.offset + iprp.size, 'ipco');
+    if (ipco) {
+      var ipcoEnd = ipco.offset + ipco.size;
+      var off = ipco.offset + 8;
+      while (off + 8 <= ipcoEnd) {
+        var bSize = read32At(off); var bType = typeAt(off);
+        if (bSize < 8) break;
+        if (bType === 'ispe' && off + 20 <= ipcoEnd) {
+          info.width = read32At(off + 12);
+          info.height = read32At(off + 16);
+          break;
+        }
+        off += bSize;
+      }
+    }
+  }
+  var off2 = metaContent;
+  while (off2 + 8 <= metaEnd) {
+    var bSize = read32At(off2); var bType = typeAt(off2);
     if (bSize < 8) break;
-    if (bType === 'iinf' || bType === 'iloc' || bType === 'iprp') { off += bSize; continue; }
+    if (bType === 'iinf' || bType === 'iloc' || bType === 'iprp') { off2 += bSize; continue; }
     if (bType === 'Exif') {
-      var exifStart = off + 8;
-      var prefixLen = (bytes[exifStart]<<24)|(bytes[exifStart+1]<<16)|(bytes[exifStart+2]<<8)|bytes[exifStart+3];
+      var exifStart = off2 + 8;
+      var prefixLen = read32At(exifStart);
       var tiffStart = exifStart + 4 + prefixLen;
-      if (tiffStart + 8 < off + bSize) { parseExifData(bytes.slice(tiffStart, off + bSize), info); }
+      if (tiffStart + 8 < off2 + bSize) { parseExifData(bytes.slice(tiffStart, off2 + bSize), info); }
       return;
     }
-    off += bSize;
+    off2 += bSize;
   }
 }
 
