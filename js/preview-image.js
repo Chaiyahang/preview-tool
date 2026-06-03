@@ -1,5 +1,5 @@
 // preview-image.js — Image preview functionality
-import { parseExifData, parseEXIF, parseGIF, parseWebP, parsePNG, parsePAG, parseHEIF } from './parsers.js';
+import { parseExifData, parseEXIF, parseGIF, parseWebP, parsePNG, parsePAG, parsePAGAsync, parseHEIF } from './parsers.js';
 import { state, hideAllPreviews } from './main.js';
 
 export function infoItem(label, value) { return '<div class="img-info-item"><span class="label">' + label + '</span><span class="value">' + value + '</span></div>'; }
@@ -36,7 +36,7 @@ export async function analyzeImage(file) {
   else if (name.endsWith('.jpg') || name.endsWith('.jpeg')) { info.format = 'JPEG'; parseEXIF(bytes, info); await getDimensions(file, info); }
   else if (name.endsWith('.tiff') || name.endsWith('.tif') || (bytes[0] === 0x49 && bytes[1] === 0x49 && bytes[2] === 0x2A && bytes[3] === 0x00) || (bytes[0] === 0x4D && bytes[1] === 0x4D && bytes[2] === 0x00 && bytes[3] === 0x2A)) { info.format = 'TIFF'; parseExifData(bytes, info); await getDimensions(file, info); }
   else if (name.endsWith('.heic') || name.endsWith('.heif') || name.endsWith('.avif')) { info.format = name.endsWith('.avif') ? 'AVIF' : 'HEIC'; parseHEIF(bytes, info); }
-  else if (name.endsWith('.pag')) { info.format = 'PAG'; parsePAG(bytes, info); }
+  else if (name.endsWith('.pag')) { info.format = 'PAG'; parsePAG(bytes, info); await parsePAGAsync(buffer, info); }
   if (info.width === 0) await getDimensions(file, info);
   if (info.width && info.height) { info.aspectRatio = formatAspectRatio(info.width, info.height); info.megapixels = parseFloat((info.width * info.height / 1000000).toFixed(2)); }
   return info;
@@ -58,7 +58,10 @@ export async function showImagePreview(filePath) {
 
   hideAllPreviews(); previewImage.classList.remove('hidden'); controls.classList.add('hidden');
   var lower = filePath.toLowerCase();
-  if (lower.endsWith('.heic') || lower.endsWith('.heif')) {
+  if (lower.endsWith('.pag')) {
+    try { await renderPAGPreview(file, imgPreviewEl); }
+    catch(e) { imgPreviewEl.src = ''; }
+  } else if (lower.endsWith('.heic') || lower.endsWith('.heif')) {
     try { var blob = await window.heic2any({ blob: file, toType: 'image/jpeg', quality: 0.92 }); imgPreviewEl.src = URL.createObjectURL(blob); }
     catch(e) { imgPreviewEl.src = ''; }
   } else { imgPreviewEl.src = URL.createObjectURL(file); }
@@ -85,4 +88,21 @@ export async function showImagePreview(filePath) {
     reverseGeocode(info.gps.lat, info.gps.lng);
   }
   imgInfoPanel.innerHTML = html;
+}
+
+async function renderPAGPreview(file, imgEl) {
+  if (!window.libpag) { imgEl.src = ''; return; }
+  var PAG = await window.libpag.PAGInit({
+    locateFile: function(f) { return 'https://cdn.jsdelivr.net/npm/libpag@4.2.81/lib/' + f; }
+  });
+  var buffer = await file.arrayBuffer();
+  var pagFile = await PAG.PAGFile.load(buffer);
+  var w = pagFile.width(), h = pagFile.height();
+  var canvas = document.createElement('canvas');
+  canvas.width = w; canvas.height = h;
+  var pagView = await PAG.PAGView.init(pagFile, canvas);
+  await pagView.flush();
+  imgEl.src = canvas.toDataURL('image/png');
+  pagView.destroy();
+  pagFile.destroy();
 }

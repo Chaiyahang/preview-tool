@@ -129,7 +129,23 @@ export function parsePNG(bytes, info) {
   info.duration = totalDelay;
 }
 
-export function parsePAG(bytes, info) { info.animated = true; if (bytes.length > 20) { info.frames = 0; info.duration = 0; } }
+export function parsePAG(bytes, info) { info.animated = true; info.frames = 0; info.duration = 0; }
+
+export async function parsePAGAsync(buffer, info) {
+  if (!window.libpag) return;
+  try {
+    var PAG = await window.libpag.PAGInit({
+      locateFile: function(file) { return 'https://cdn.jsdelivr.net/npm/libpag@4.2.81/lib/' + file; }
+    });
+    var pagFile = await PAG.PAGFile.load(buffer);
+    info.width = pagFile.width();
+    info.height = pagFile.height();
+    info.duration = pagFile.duration() / 1000000;
+    info.frames = Math.round(pagFile.frameRate() * info.duration);
+    info.animated = info.duration > 0;
+    pagFile.destroy();
+  } catch(e) { console.warn('PAG parse failed:', e); }
+}
 
 export function parseHEIF(bytes, info) {
   function read32At(off) { return (bytes[off]<<24)|(bytes[off+1]<<16)|(bytes[off+2]<<8)|bytes[off+3]; }
