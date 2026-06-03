@@ -221,3 +221,40 @@ document.querySelectorAll('.bg-dot').forEach(function(dot) {
     document.removeEventListener('mouseup', onUp);
   }
 })();
+
+// --- Mobile sidebar toggle ---
+(function() {
+  var sidebarToggle = document.getElementById('sidebar-toggle');
+  var sidebar = document.getElementById('sidebar');
+  var backdrop = document.getElementById('sidebar-backdrop');
+
+  function openSidebar() {
+    sidebar.classList.add('open');
+    backdrop.classList.add('active');
+  }
+
+  function closeSidebar() {
+    sidebar.classList.remove('open');
+    backdrop.classList.remove('active');
+  }
+
+  sidebarToggle.addEventListener('click', function(e) {
+    e.stopPropagation();
+    if (sidebar.classList.contains('open')) {
+      closeSidebar();
+    } else {
+      openSidebar();
+    }
+  });
+
+  backdrop.addEventListener('click', function() {
+    closeSidebar();
+  });
+
+  // Close sidebar when a file tree item is tapped on mobile
+  document.getElementById('file-tree').addEventListener('click', function(e) {
+    if (e.target.closest('.tree-item') && window.innerWidth <= 768) {
+      closeSidebar();
+    }
+  });
+})();

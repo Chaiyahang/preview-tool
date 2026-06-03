@@ -16,6 +16,9 @@
 <body>
 
 <div class="header">
+  <button class="sidebar-toggle" id="sidebar-toggle" aria-label="Toggle sidebar">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+  </button>
   <div class="header-brand">
     <div class="header-logo"><svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg></div>
     <h1>Preview Tool</h1>
@@ -33,11 +36,12 @@
 </div>
 
 <div class="main">
-  <div class="sidebar">
+  <div class="sidebar" id="sidebar">
     <div class="sidebar-header">Explorer</div>
     <div class="file-tree" id="file-tree"></div>
     <div class="sidebar-resizer" id="sidebar-resizer"></div>
   </div>
+  <div class="sidebar-backdrop" id="sidebar-backdrop"></div>
 
   <div class="canvas-area" id="canvas-area">
     <div class="drop-zone" id="drop-zone-lottie">

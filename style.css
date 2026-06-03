@@ -186,3 +186,99 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--t
 .sqlite-viewer tr:hover td{background:var(--bg-secondary)}
 .sqlite-viewer td,.sqlite-viewer th{user-select:text;-webkit-user-select:text}
 .sqlite-viewer .row-count{font-size:11px;color:var(--text-muted);margin-left:8px;font-weight:400}
+
+/* Sidebar toggle button — hidden on desktop */
+.sidebar-toggle{display:none;width:36px;height:36px;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--text-secondary);cursor:pointer;align-items:center;justify-content:center;flex-shrink:0;transition:all .15s}
+.sidebar-toggle svg{width:18px;height:18px}
+.sidebar-toggle:hover{border-color:var(--accent);color:var(--accent)}
+
+/* Sidebar backdrop — hidden on desktop */
+.sidebar-backdrop{display:none}
+
+/* =====================================================
+   MOBILE RESPONSIVE — max-width: 768px
+   ===================================================== */
+@media (max-width: 768px) {
+
+  /* Header */
+  .header{padding:0 12px;gap:10px;height:50px}
+  .header-brand h1{font-size:13px}
+  .header-logo{width:28px;height:28px;border-radius:7px}
+  .header-logo svg{width:13px;height:13px}
+  .tab-bar{overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;flex-shrink:1;min-width:0}
+  .tab-bar::-webkit-scrollbar{display:none}
+  .tab-btn{padding:5px 12px;font-size:11px;white-space:nowrap}
+  .header-meta{gap:6px}
+  .info-pill{font-size:10px;padding:4px 8px}
+  .btn-reset{padding:5px 10px;font-size:11px}
+
+  /* Sidebar toggle — visible on mobile */
+  .sidebar-toggle{display:flex}
+
+  /* Sidebar — off-canvas drawer */
+  .sidebar{position:fixed;top:0;left:0;bottom:0;width:260px;max-width:80vw;z-index:1000;transform:translateX(-100%);transition:transform .25s cubic-bezier(.4,0,.2,1);box-shadow:none}
+  .sidebar.open{transform:translateX(0);box-shadow:8px 0 30px rgba(0,0,0,0.5)}
+  .sidebar-resizer{display:none}
+
+  /* Sidebar backdrop */
+  .sidebar-backdrop{display:none;position:fixed;inset:0;z-index:999;background:rgba(0,0,0,0.5);transition:opacity .25s}
+  .sidebar-backdrop.active{display:block}
+
+  /* Main area */
+  .main{flex:1;overflow:hidden}
+
+  /* Drop zones */
+  .drop-zone{gap:18px;padding:16px}
+  .drop-visual{width:64px;height:64px;border-radius:18px}
+  .drop-visual svg{width:28px;height:28px}
+  .drop-text h2{font-size:15px}
+  .drop-text p{font-size:11px}
+  .drop-hint{font-size:10px}
+  .select-btn{padding:8px 16px;font-size:12px}
+
+  /* Image info panel — single column */
+  .img-info-panel{padding:10px 14px;gap:8px 16px;border-radius:10px;flex-direction:column;max-width:none;margin-top:12px}
+  .img-info-item .value{font-size:13px}
+  .img-info-item .label{font-size:8px}
+
+  /* Image preview */
+  .img-preview-container{padding:12px}
+
+  /* File preview — horizontal scroll */
+  .file-content{font-size:12px;overflow-x:auto}
+  .file-content .line{padding:0 12px 0 48px}
+  .file-content .line::before{width:36px;font-size:10px}
+  .file-hex{font-size:11px;overflow-x:auto;padding:12px}
+  .file-preview-header{padding:10px 14px;font-size:10px;gap:6px 14px}
+
+  /* Video preview */
+  .video-preview-container{padding:12px}
+  #video-player{max-width:100%;max-height:60%}
+
+  /* SQLite viewer — horizontal scroll */
+  .sqlite-viewer{padding:12px;overflow-x:auto}
+  .sqlite-viewer table{min-width:600px}
+
+  /* Controls bar */
+  .controls{padding:8px 12px;gap:6px;flex-wrap:wrap}
+  .ctrl-btn{width:30px;height:30px;font-size:12px}
+  .speed-select{font-size:10px;padding:4px 6px}
+  .bg-control{gap:4px}
+  .bg-dot{width:14px;height:14px}
+
+  /* Image zoom overlay */
+  .img-zoom-overlay img{max-width:100vw}
+  .img-zoom-controls{bottom:16px;padding:4px 8px;gap:6px;border-radius:8px}
+  .img-zoom-controls button{width:28px;height:28px;font-size:14px}
+  .img-zoom-controls span{font-size:11px;min-width:40px}
+  .img-zoom-close{top:12px;right:12px;width:36px;height:36px;font-size:18px}
+
+  /* Float browse button */
+  .float-browse{width:36px;height:36px;top:10px;right:10px}
+
+  /* Lottie player */
+  #lottie-player{width:90%;height:70%;max-width:none;max-height:none}
+
+  /* Document preview */
+  .doc-preview-container{overflow-x:auto}
+}
