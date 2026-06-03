@@ -2,6 +2,8 @@
 import { parseExifData, parseEXIF, parseGIF, parseWebP, parsePNG, parsePAG, parsePAGAsync, parseHEIF } from './parsers.js';
 import { state, hideAllPreviews } from './main.js';
 
+var previewCallId = 0;
+
 export function infoItem(label, value) { return '<div class="img-info-item"><span class="label">' + label + '</span><span class="value">' + value + '</span></div>'; }
 export function formatSize(bytes) { if (bytes < 1024) return bytes + ' B'; if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' KB'; return (bytes / 1048576).toFixed(2) + ' MB'; }
 export function gcd(a, b) { return b === 0 ? a : gcd(b, a % b); }
@@ -43,6 +45,7 @@ export async function analyzeImage(file) {
 }
 
 export async function showImagePreview(filePath) {
+  var thisCallId = ++previewCallId;
   var currentMode = state.currentMode;
   var fileMap = state.fileMap;
   var modeState = state.modeState;
@@ -63,10 +66,12 @@ export async function showImagePreview(filePath) {
     try { await renderPAGPreview(file, imgPreviewEl); }
     catch(e) { imgPreviewEl.src = ''; }
   } else if (lower.endsWith('.heic') || lower.endsWith('.heif')) {
-    try { var blob = await window.heic2any({ blob: file, toType: 'image/jpeg', quality: 0.92 }); imgPreviewEl.src = URL.createObjectURL(blob); }
+    try { var blob = await window.heic2any({ blob: file, toType: 'image/jpeg', quality: 0.92 }); if (previewCallId !== thisCallId) return; imgPreviewEl.src = URL.createObjectURL(blob); }
     catch(e) { imgPreviewEl.src = ''; }
   } else { imgPreviewEl.src = URL.createObjectURL(file); }
+  if (previewCallId !== thisCallId) return;
   var info = await analyzeImage(file);
+  if (previewCallId !== thisCallId) return;
   infoBadge.style.display = '';
   infoBadge.textContent = info.format + (info.animated ? ' (Animated)' : '') + '  ·  ' + info.width + 'x' + info.height;
   var html = '';
@@ -93,11 +98,14 @@ export async function showImagePreview(filePath) {
 
 async function renderPAGPreview(file, imgEl) {
   if (!window.libpag) { imgEl.src = ''; return; }
+  var thisCallId = previewCallId;
   cleanupPAGView();
   var PAG = await window.libpag.PAGInit({
     locateFile: function(f) { return 'https://cdn.jsdelivr.net/npm/libpag@4.2.81/lib/' + f; }
   });
+  if (previewCallId !== thisCallId) return;
   var buffer = await file.arrayBuffer();
+  if (previewCallId !== thisCallId) return;
   var pagFile = await PAG.PAGFile.load(buffer);
   var w = pagFile.width(), h = pagFile.height();
   var canvas = document.createElement('canvas');
