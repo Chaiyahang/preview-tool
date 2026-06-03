@@ -169,6 +169,9 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--t
 .sqlite-viewer .table-schema{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--text-muted);margin-bottom:10px;padding:6px 10px;background:var(--bg);border-radius:6px;border:1px solid var(--border)}
 .sqlite-viewer table{width:100%;border-collapse:collapse;font-size:12px;margin-bottom:24px}
 .sqlite-viewer th{background:var(--bg-tertiary);color:var(--text-secondary);font-weight:600;text-align:left;padding:8px 12px;border:1px solid var(--border);font-family:'JetBrains Mono',monospace;font-size:11px;position:sticky;top:0}
-.sqlite-viewer td{padding:6px 12px;border:1px solid var(--border);color:var(--text);font-family:'JetBrains Mono',monospace;font-size:11px;max-width:300px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sqlite-viewer td{padding:6px 12px;border:1px solid var(--border);color:var(--text);font-family:'JetBrains Mono',monospace;font-size:11px;max-width:300px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;position:relative;cursor:default}
+.sqlite-viewer td:hover{overflow:visible;white-space:normal;word-break:break-all;background:var(--bg-secondary);z-index:10}
+.sqlite-viewer td.cell-expanded{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);max-width:80vw;max-height:60vh;overflow:auto;white-space:pre-wrap;word-break:break-all;background:var(--bg-secondary);border:1px solid var(--accent);border-radius:10px;padding:16px;z-index:1000;box-shadow:0 20px 60px rgba(0,0,0,0.6);cursor:text;user-select:text;-webkit-user-select:text}
 .sqlite-viewer tr:hover td{background:var(--bg-secondary)}
+.sqlite-viewer td,.sqlite-viewer th{user-select:text;-webkit-user-select:text}
 .sqlite-viewer .row-count{font-size:11px;color:var(--text-muted);margin-left:8px;font-weight:400}

@@ -276,6 +276,21 @@ async function showSqlitePreview(file) {
     if (existingViewer) existingViewer.remove();
     container.appendChild(viewer);
 
+    viewer.addEventListener('click', function(e) {
+      var td = e.target.closest('td');
+      if (!td) return;
+      var existing = viewer.querySelector('.cell-expanded');
+      if (existing) { existing.classList.remove('cell-expanded'); }
+      if (existing === td) return;
+      td.classList.add('cell-expanded');
+    });
+    document.addEventListener('click', function handler(e) {
+      if (!viewer.contains(e.target)) {
+        var exp = viewer.querySelector('.cell-expanded');
+        if (exp) exp.classList.remove('cell-expanded');
+      }
+    });
+
   } catch(e) {
     headerHtml += '<span class="fph-item"><span class="fph-label">Error:</span><span class="fph-value" style="color:var(--destructive)">' + e.message + '</span></span>';
     filePreviewHeader.innerHTML = headerHtml;
