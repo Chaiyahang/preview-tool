@@ -622,6 +622,9 @@ async function showImagePreview(filePath) {
   if (info.hasAlpha) html += infoItem('Alpha', 'Yes');
   if (info.gifVersion) html += infoItem('GIF Version', info.gifVersion);
   if (info.animated) { html += infoItem('Animated', 'Yes'); if (info.frames > 0) html += infoItem('Frames', info.frames); if (info.duration > 0) html += infoItem('Duration', info.duration.toFixed(2) + 's'); if (info.frames > 0 && info.duration > 0) html += infoItem('FPS', (info.frames / info.duration).toFixed(1)); if (info.loopCount >= 0) html += infoItem('Loop Count', info.loopCount === 0 ? '∞ (Infinite)' : info.loopCount); }
+  if (info.camera) html += infoItem('Camera', info.camera);
+  if (info.dateTime) html += infoItem('Date Taken', info.dateTime);
+  if (info.gps) html += infoItem('Location', info.gps.lat.toFixed(6) + ', ' + info.gps.lng.toFixed(6) + ' <a href="https://maps.google.com/?q=' + info.gps.lat + ',' + info.gps.lng + '" target="_blank" style="color:var(--accent);text-decoration:none;margin-left:6px">Map ↗</a>');
   imgInfoPanel.innerHTML = html;
 }
 
@@ -632,18 +635,92 @@ function formatAspectRatio(w, h) { if (!w || !h) return ''; var g = gcd(w, h); v
 
 async function analyzeImage(file) {
   var info = { format: 'Unknown', width: 0, height: 0, animated: false, frames: 0, duration: 0,
-    aspectRatio: '', megapixels: 0, compression: '', hasAlpha: false, colorType: '', bitDepth: 0, loopCount: -1, gifVersion: '' };
+    aspectRatio: '', megapixels: 0, compression: '', hasAlpha: false, colorType: '', bitDepth: 0, loopCount: -1, gifVersion: '',
+    gps: null, camera: '', dateTime: '' };
   var name = file.name.toLowerCase(); var buffer = await file.arrayBuffer(); var bytes = new Uint8Array(buffer);
   if (name.endsWith('.gif') || (bytes[0] === 0x47 && bytes[1] === 0x49 && bytes[2] === 0x46)) { info.format = 'GIF'; parseGIF(bytes, info); }
   else if (name.endsWith('.webp') || (bytes[8] === 0x57 && bytes[9] === 0x45 && bytes[10] === 0x42 && bytes[11] === 0x50)) { info.format = 'WebP'; parseWebP(bytes, info); }
   else if (name.endsWith('.png') || name.endsWith('.apng') || (bytes[0] === 0x89 && bytes[1] === 0x50)) { info.format = 'PNG'; parsePNG(bytes, info); }
-  else if (name.endsWith('.jpg') || name.endsWith('.jpeg')) { info.format = 'JPEG'; await getDimensions(file, info); }
+  else if (name.endsWith('.jpg') || name.endsWith('.jpeg')) { info.format = 'JPEG'; parseEXIF(bytes, info); await getDimensions(file, info); }
+  else if (name.endsWith('.tiff') || name.endsWith('.tif') || (bytes[0] === 0x49 && bytes[1] === 0x49 && bytes[2] === 0x2A && bytes[3] === 0x00) || (bytes[0] === 0x4D && bytes[1] === 0x4D && bytes[2] === 0x00 && bytes[3] === 0x2A)) { info.format = 'TIFF'; parseExifData(bytes, info); await getDimensions(file, info); }
+  else if (name.endsWith('.heic') || name.endsWith('.heif') || name.endsWith('.avif')) { info.format = name.endsWith('.avif') ? 'AVIF' : 'HEIC'; parseHEIF(bytes, info); await getDimensions(file, info); }
   else if (name.endsWith('.pag')) { info.format = 'PAG'; parsePAG(bytes, info); }
   if (info.width === 0) await getDimensions(file, info);
   if (info.width && info.height) { info.aspectRatio = formatAspectRatio(info.width, info.height); info.megapixels = parseFloat((info.width * info.height / 1000000).toFixed(2)); }
   return info;
 }
 function getDimensions(file, info) { return new Promise(function(resolve) { var img = new Image(); img.onload = function() { info.width = img.naturalWidth; info.height = img.naturalHeight; resolve(); }; img.onerror = function() { resolve(); }; img.src = URL.createObjectURL(file); }); }
+
+function parseEXIF(bytes, info) {
+  if (bytes[0] !== 0xFF || bytes[1] !== 0xD8) return;
+  var offset = 2;
+  while (offset < bytes.length - 4) {
+    if (bytes[offset] !== 0xFF) break;
+    var marker = bytes[offset + 1];
+    if (marker === 0xE1) {
+      var len = (bytes[offset + 2] << 8) | bytes[offset + 3];
+      var exifData = bytes.slice(offset + 4, offset + 2 + len);
+      if (String.fromCharCode(exifData[0], exifData[1], exifData[2], exifData[3]) === 'Exif') {
+        parseExifData(exifData.slice(6), info);
+      }
+      return;
+    }
+    var segLen = (bytes[offset + 2] << 8) | bytes[offset + 3];
+    offset += 2 + segLen;
+  }
+}
+
+function parseExifData(data, info) {
+  var le = data[0] === 0x49;
+  function read16(off) { return le ? (data[off] | (data[off+1]<<8)) : ((data[off]<<8) | data[off+1]); }
+  function read32(off) { return le ? (data[off] | (data[off+1]<<8) | (data[off+2]<<16) | (data[off+3]<<24)) : ((data[off]<<24) | (data[off+1]<<16) | (data[off+2]<<8) | data[off+3]); }
+  function readRational(off) { var n = read32(off), d = read32(off+4); return d ? n/d : 0; }
+  function readString(off, len) { var s = ''; for (var i = 0; i < len && data[off+i] !== 0; i++) s += String.fromCharCode(data[off+i]); return s.trim(); }
+
+  if (read16(2) !== 0x002A) return;
+  var ifdOffset = read32(4);
+  var gpsIfdOffset = 0;
+
+  function parseIFD(off) {
+    if (off + 2 > data.length) return;
+    var count = read16(off); off += 2;
+    for (var i = 0; i < count && off + 12 <= data.length; i++) {
+      var tag = read16(off), type = read16(off+2), cnt = read32(off+4), valOff = off + 8;
+      if (cnt * [0,1,1,2,4,8,1,1,2,4,8,4,8][type] > 4) valOff = read32(off+8);
+      if (tag === 0x010F || tag === 0x0110) {
+        var str = readString(valOff, cnt);
+        if (tag === 0x010F) info.camera = str;
+        else info.camera = (info.camera ? info.camera + ' ' : '') + str;
+      }
+      if (tag === 0x0132 || tag === 0x9003) { info.dateTime = readString(valOff, cnt).replace(/(\d{4}):(\d{2}):(\d{2})/, '$1-$2-$3'); }
+      if (tag === 0x8825) { gpsIfdOffset = read32(off+8); }
+      off += 12;
+    }
+  }
+
+  parseIFD(ifdOffset);
+  var nextIfd = read32(ifdOffset + 2 + read16(ifdOffset) * 12);
+  if (nextIfd > 0 && nextIfd < data.length) parseIFD(nextIfd);
+
+  if (gpsIfdOffset > 0 && gpsIfdOffset + 2 < data.length) {
+    var gpsCount = read16(gpsIfdOffset); var gOff = gpsIfdOffset + 2;
+    var lat = 0, lng = 0, latRef = 'N', lngRef = 'E';
+    for (var i = 0; i < gpsCount && gOff + 12 <= data.length; i++) {
+      var gTag = read16(gOff), gType = read16(gOff+2), gCnt = read32(gOff+4), gValOff = gOff + 8;
+      if (gCnt * [0,1,1,2,4,8,1,1,2,4,8,4,8][gType] > 4) gValOff = read32(gOff+8);
+      if (gTag === 1) latRef = String.fromCharCode(data[gValOff]);
+      if (gTag === 3) lngRef = String.fromCharCode(data[gValOff]);
+      if (gTag === 2) { lat = readRational(gValOff) + readRational(gValOff+8)/60 + readRational(gValOff+16)/3600; }
+      if (gTag === 4) { lng = readRational(gValOff) + readRational(gValOff+8)/60 + readRational(gValOff+16)/3600; }
+      gOff += 12;
+    }
+    if (lat !== 0 || lng !== 0) {
+      if (latRef === 'S') lat = -lat;
+      if (lngRef === 'W') lng = -lng;
+      info.gps = { lat: lat, lng: lng };
+    }
+  }
+}
 
 function parseGIF(bytes, info) {
   if (bytes.length < 13) return;
@@ -678,6 +755,7 @@ function parseWebP(bytes, info) {
     else if (chunk === 'VP8L') { info.compression = 'Lossless'; }
     else if (chunk === 'ANIM') { info.loopCount = bytes[offset+8] | (bytes[offset+9] << 8); }
     else if (chunk === 'ANMF') { info.frames++; frameDurations.push(bytes[offset+20] | (bytes[offset+21] << 8)); }
+    else if (chunk === 'EXIF') { var exifBytes = bytes.slice(offset + 8, offset + 8 + size); if (exifBytes[0] === 0x49 || exifBytes[0] === 0x4D) { parseExifData(exifBytes, info); } else if (exifBytes.length > 6 && String.fromCharCode(exifBytes[0], exifBytes[1], exifBytes[2], exifBytes[3]) === 'Exif') { parseExifData(exifBytes.slice(6), info); } }
     offset += 8 + size + (size & 1);
   }
   if (frameDurations.length > 1) { var sorted = frameDurations.slice(0, -1).sort(function(a, b) { return a - b; }); var median = sorted[Math.floor(sorted.length / 2)]; if (frameDurations[frameDurations.length - 1] > median * 3) { info.duration = frameDurations.slice(0, -1).reduce(function(s, d) { return s + d; }, 0); } else { info.duration = frameDurations.reduce(function(s, d) { return s + d; }, 0); } }
@@ -695,11 +773,45 @@ function parsePNG(bytes, info) {
   while (offset < bytes.length - 8) { var len = (bytes[offset]<<24)|(bytes[offset+1]<<16)|(bytes[offset+2]<<8)|bytes[offset+3]; var type = String.fromCharCode(bytes[offset+4],bytes[offset+5],bytes[offset+6],bytes[offset+7]);
     if (type === 'acTL') { info.animated = true; info.format = 'APNG'; info.frames = (bytes[offset+8]<<24)|(bytes[offset+9]<<16)|(bytes[offset+10]<<8)|bytes[offset+11]; info.loopCount = (bytes[offset+12]<<24)|(bytes[offset+13]<<16)|(bytes[offset+14]<<8)|bytes[offset+15]; }
     else if (type === 'fcTL') { var dn = (bytes[offset+28]<<8)|bytes[offset+29]; var dd = (bytes[offset+30]<<8)|bytes[offset+31]; if (dd === 0) dd = 100; totalDelay += dn / dd; }
+    else if (type === 'eXIf') { parseExifData(bytes.slice(offset + 8, offset + 8 + len), info); }
     offset += 12 + len; }
   info.duration = totalDelay;
 }
 
 function parsePAG(bytes, info) { info.animated = true; if (bytes.length > 20) { info.frames = 0; info.duration = 0; } }
+
+function parseHEIF(bytes, info) {
+  var offset = 0;
+  function searchBox(start, end, target) {
+    var off = start;
+    while (off + 8 <= end) {
+      var size = (bytes[off]<<24)|(bytes[off+1]<<16)|(bytes[off+2]<<8)|bytes[off+3];
+      var type = String.fromCharCode(bytes[off+4], bytes[off+5], bytes[off+6], bytes[off+7]);
+      if (size < 8) break;
+      if (type === target) return { offset: off, size: size };
+      off += size;
+    }
+    return null;
+  }
+  var meta = searchBox(0, Math.min(bytes.length, 100000), 'meta');
+  if (!meta) return;
+  var metaStart = meta.offset + 12, metaEnd = meta.offset + meta.size;
+  var off = metaStart;
+  while (off + 8 <= metaEnd) {
+    var bSize = (bytes[off]<<24)|(bytes[off+1]<<16)|(bytes[off+2]<<8)|bytes[off+3];
+    var bType = String.fromCharCode(bytes[off+4], bytes[off+5], bytes[off+6], bytes[off+7]);
+    if (bSize < 8) break;
+    if (bType === 'iinf' || bType === 'iloc' || bType === 'iprp') { off += bSize; continue; }
+    if (bType === 'Exif') {
+      var exifStart = off + 8;
+      var prefixLen = (bytes[exifStart]<<24)|(bytes[exifStart+1]<<16)|(bytes[exifStart+2]<<8)|bytes[exifStart+3];
+      var tiffStart = exifStart + 4 + prefixLen;
+      if (tiffStart + 8 < off + bSize) { parseExifData(bytes.slice(tiffStart, off + bSize), info); }
+      return;
+    }
+    off += bSize;
+  }
+}
 
 function hideAllPreviews() { dropZoneLottie.classList.add('hidden'); dropZoneImage.classList.add('hidden'); dropZoneVideo.classList.add('hidden'); dropZoneFile.classList.add('hidden'); previewLottie.classList.add('hidden'); previewImage.classList.add('hidden'); previewVideo.classList.add('hidden'); previewFile.classList.add('hidden'); previewDoc.classList.add('hidden'); }
 
