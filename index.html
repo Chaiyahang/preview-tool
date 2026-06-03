@@ -213,7 +213,7 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--t
       <div class="drop-visual"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></div>
       <div class="drop-text">
         <h2>Image Preview</h2>
-        <p>WebP / APNG / GIF / PAG / PNG / JPG</p>
+        <p>WebP / APNG / GIF / PAG / PNG / JPG / HEIC / AVIF / TIFF</p>
       </div>
       <div class="drop-hint">Drag files here or click Browse · Shows format, frames, duration & FPS</div>
       <div class="drop-actions">
@@ -224,7 +224,7 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--t
         <div class="select-menu" id="menu-image">
           <label onclick="closeMenu()"><svg viewBox="0 0 24 24"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg> Folder<input type="file" id="img-folder" webkitdirectory multiple></label>
           <label onclick="closeMenu()"><svg viewBox="0 0 24 24"><path d="M21 8v13H3V8"/><path d="M1 3h22v5H1z"/><path d="M10 12h4"/></svg> ZIP<input type="file" id="img-zip" accept=".zip"></label>
-          <label onclick="closeMenu()"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg> Image<input type="file" id="img-file" accept=".webp,.apng,.png,.gif,.jpg,.jpeg,.pag" multiple></label>
+          <label onclick="closeMenu()"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg> Image<input type="file" id="img-file" accept=".webp,.apng,.png,.gif,.jpg,.jpeg,.pag,.heic,.heif,.avif,.tiff,.tif" multiple></label>
         </div>
       </div>
     </div>
@@ -247,7 +247,7 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--t
         <div class="select-menu" id="menu-image-float">
           <label onclick="closeMenu()"><svg viewBox="0 0 24 24"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg> Folder<input type="file" id="img-folder2" webkitdirectory multiple></label>
           <label onclick="closeMenu()"><svg viewBox="0 0 24 24"><path d="M21 8v13H3V8"/><path d="M1 3h22v5H1z"/><path d="M10 12h4"/></svg> ZIP<input type="file" id="img-zip2" accept=".zip"></label>
-          <label onclick="closeMenu()"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg> Image<input type="file" id="img-file2" accept=".webp,.apng,.png,.gif,.jpg,.jpeg,.pag" multiple></label>
+          <label onclick="closeMenu()"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg> Image<input type="file" id="img-file2" accept=".webp,.apng,.png,.gif,.jpg,.jpeg,.pag,.heic,.heif,.avif,.tiff,.tif" multiple></label>
         </div>
       </div>
       <div class="img-info-panel" id="img-info-panel"></div>
@@ -338,7 +338,7 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--t
 
 <script>
 var HIDDEN_FILES = ['.DS_Store', 'Thumbs.db', '.gitkeep', '__MACOSX'];
-var IMG_EXTS = ['.png', '.jpg', '.jpeg', '.webp', '.gif', '.apng', '.pag', '.svg'];
+var IMG_EXTS = ['.png', '.jpg', '.jpeg', '.webp', '.gif', '.apng', '.pag', '.svg', '.heic', '.heif', '.avif', '.tiff', '.tif'];
 var VIDEO_EXTS = ['.mp4', '.webm', '.mov', '.mkv', '.ogg', '.avi'];
 
 var currentMode = 'lottie';
