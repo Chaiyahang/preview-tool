@@ -20,12 +20,53 @@ export function getDimensions(file, info) {
 
 export function reverseGeocode(lat, lng, elementId) {
   var targetId = elementId || 'gps-location-text';
-  fetch('https://nominatim.openstreetmap.org/reverse?format=json&lat=' + lat + '&lon=' + lng + '&zoom=16&accept-language=zh')
+  var el = document.getElementById(targetId);
+  if (!el) return;
+  var originalText = el.textContent;
+  el.textContent = '获取地址中...';
+  el.style.opacity = '0.6';
+
+  var controller = new AbortController();
+  var timeout = setTimeout(function() { controller.abort(); }, 8000);
+
+  // Try Nominatim first
+  fetch('https://nominatim.openstreetmap.org/reverse?format=json&lat=' + lat + '&lon=' + lng + '&zoom=16&accept-language=zh', {
+    signal: controller.signal,
+    headers: { 'User-Agent': 'PreviewTool/1.0' }
+  })
     .then(function(r) { return r.json(); })
     .then(function(d) {
-      var el = document.getElementById(targetId);
-      if (el && d.display_name) { el.textContent = d.display_name; }
-    }).catch(function() {});
+      clearTimeout(timeout);
+      if (d.display_name) {
+        el.textContent = d.display_name;
+        el.style.opacity = '1';
+      } else {
+        el.textContent = originalText;
+        el.style.opacity = '1';
+      }
+    })
+    .catch(function() {
+      // Nominatim failed, try alternative (geocode.maps.co)
+      clearTimeout(timeout);
+      var c2 = new AbortController();
+      var t2 = setTimeout(function() { c2.abort(); }, 8000);
+      return fetch('https://geocode.maps.co/reverse?lat=' + lat + '&lon=' + lng, { signal: c2.signal })
+        .then(function(r) { return r.json(); })
+        .then(function(d) {
+          clearTimeout(t2);
+          if (d.display_name) {
+            el.textContent = d.display_name;
+          } else if (d.address) {
+            var addr = d.address;
+            el.textContent = [addr.country, addr.state, addr.city, addr.district || addr.suburb, addr.road].filter(Boolean).join(', ');
+          }
+          el.style.opacity = '1';
+        });
+    })
+    .catch(function() {
+      el.textContent = originalText;
+      el.style.opacity = '1';
+    });
 }
 
 export async function analyzeImage(file) {
