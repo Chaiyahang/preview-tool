@@ -23,6 +23,11 @@ export function parseExifData(data, info) {
         else info.camera = (info.camera ? info.camera + ' ' : '') + str;
       }
       if (tag === 0x0132 || tag === 0x9003) { info.dateTime = readString(valOff, cnt).replace(/(\d{4}):(\d{2}):(\d{2})/, '$1-$2-$3'); }
+      if (tag === 0x829A) { var num = read32(valOff), den = read32(valOff+4); if (den) info.exposureTime = num + '/' + den; }
+      if (tag === 0x829D) { info.fNumber = readRational(valOff); }
+      if (tag === 0x8827) { info.iso = (type === 3) ? read16(valOff) : read32(valOff); }
+      if (tag === 0x920A) { info.focalLength = readRational(valOff); }
+      if (tag === 0xA405) { info.focalLength35 = (type === 3) ? read16(valOff) : read32(valOff); }
       if (tag === 0x8769) { exifIfdOffset = read32(off+8); }
       if (tag === 0x8825) { gpsIfdOffset = read32(off+8); }
       off += 12;

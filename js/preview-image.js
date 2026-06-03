@@ -90,6 +90,10 @@ export async function showImagePreview(filePath) {
   if (info.animated) { html += infoItem('Animated', 'Yes'); if (info.frames > 0) html += infoItem('Frames', info.frames); if (info.duration > 0) html += infoItem('Duration', info.duration.toFixed(2) + 's'); if (info.frames > 0 && info.duration > 0) html += infoItem('FPS', (info.frames / info.duration).toFixed(1)); if (info.loopCount >= 0) html += infoItem('Loop Count', info.loopCount === 0 ? '∞ (Infinite)' : info.loopCount); }
   if (info.camera) html += infoItem('Camera', info.camera);
   if (info.dateTime) html += infoItem('Date Taken', info.dateTime);
+  if (info.focalLength) { var fl = info.focalLength35 ? info.focalLength + ' mm (' + info.focalLength35 + ' mm eq)' : info.focalLength + ' mm'; html += infoItem('Focal Length', fl); }
+  if (info.fNumber) html += infoItem('Aperture', 'f/' + info.fNumber);
+  if (info.exposureTime) html += infoItem('Shutter', info.exposureTime + ' s');
+  if (info.iso) html += infoItem('ISO', info.iso);
   if (info.gps) {
     var amapUrl = 'https://uri.amap.com/marker?position=' + info.gps.lng + ',' + info.gps.lat + '&name=' + encodeURIComponent('拍摄位置');
     html += infoItem('Location', '<span id="gps-location-text">' + info.gps.lat.toFixed(6) + ', ' + info.gps.lng.toFixed(6) + '</span> <a href="' + amapUrl + '" target="_blank" style="color:var(--accent);text-decoration:none;margin-left:6px">高德地图 ↗</a>');
