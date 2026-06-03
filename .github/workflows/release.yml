@@ -18,7 +18,7 @@ jobs:
         with:
           node-version: '20'
 
-      - run: npm install
+      - run: npm install electron electron-builder
 
       - run: npx electron-builder --mac dmg --publish=never
 
