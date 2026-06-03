@@ -1,6 +1,7 @@
 // preview-video.js — Video preview functionality
 import { state, hideAllPreviews } from './main.js';
-import { formatSize, infoItem } from './preview-image.js';
+import { formatSize, infoItem, reverseGeocode } from './preview-image.js';
+import { parseMP4Location } from './parsers.js';
 
 function formatDuration(seconds) {
   if (!isFinite(seconds) || seconds < 0) return '—';
@@ -29,6 +30,14 @@ export async function showVideoPreview(filePath) {
   videoPlayer.style.display = '';
   infoBadge.style.display = '';
   infoBadge.textContent = file.name + ' · ' + formatSize(file.size);
+
+  var videoMeta = null;
+  try {
+    var buffer = await file.arrayBuffer();
+    var bytes = new Uint8Array(buffer);
+    videoMeta = parseMP4Location(bytes);
+  } catch(e) {}
+
   videoPlayer.onloadedmetadata = function() {
     var html = '';
     html += infoItem('Filename', file.name);
@@ -36,7 +45,17 @@ export async function showVideoPreview(filePath) {
     html += infoItem('Resolution', videoPlayer.videoWidth + ' × ' + videoPlayer.videoHeight + ' px');
     html += infoItem('Duration', formatDuration(videoPlayer.duration));
     html += infoItem('File Size', formatSize(file.size));
+    if (videoMeta && videoMeta.creationDate) {
+      html += infoItem('Creation Date', videoMeta.creationDate);
+    }
+    if (videoMeta && videoMeta.gps) {
+      var amapUrl = 'https://uri.amap.com/marker?position=' + videoMeta.gps.lng + ',' + videoMeta.gps.lat + '&name=' + encodeURIComponent('拍摄位置');
+      html += infoItem('Location', '<span id="video-gps-location-text">' + videoMeta.gps.lat.toFixed(6) + ', ' + videoMeta.gps.lng.toFixed(6) + '</span> <a href="' + amapUrl + '" target="_blank" style="color:var(--accent);text-decoration:none;margin-left:6px">高德地图 ↗</a>');
+    }
     videoInfoPanel.innerHTML = html;
     infoBadge.textContent = (file.name.split('.').pop() || '').toUpperCase() + ' · ' + videoPlayer.videoWidth + 'x' + videoPlayer.videoHeight + ' · ' + formatDuration(videoPlayer.duration);
+    if (videoMeta && videoMeta.gps) {
+      reverseGeocode(videoMeta.gps.lat, videoMeta.gps.lng, 'video-gps-location-text');
+    }
   };
 }

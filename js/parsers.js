@@ -152,6 +152,92 @@ export async function parsePAGAsync(buffer, info) {
   } catch(e) { console.warn('PAG parse failed:', e); }
 }
 
+export function parseMP4Location(bytes) {
+  var result = { gps: null, creationDate: null };
+  var len = bytes.length;
+
+  function read32(off) { return (bytes[off]<<24)|(bytes[off+1]<<16)|(bytes[off+2]<<8)|bytes[off+3]; }
+  function readStr(off, n) { var s = ''; for (var i = 0; i < n; i++) s += String.fromCharCode(bytes[off+i]); return s; }
+
+  function findAtom(start, end, target) {
+    var off = start;
+    while (off + 8 <= end) {
+      var size = read32(off);
+      var type = readStr(off + 4, 4);
+      if (size < 8) { if (size === 0) size = end - off; else break; }
+      if (off + size > end) break;
+      if (type === target) return { offset: off, size: size };
+      off += size;
+    }
+    return null;
+  }
+
+  function parseISO6709(str) {
+    var match = str.match(/([+-]\d+\.?\d*?)([+-]\d+\.?\d*)/);
+    if (!match) return null;
+    var lat = parseFloat(match[1]), lng = parseFloat(match[2]);
+    if (lat === 0 && lng === 0) return null;
+    return { lat: lat, lng: lng };
+  }
+
+  var moov = findAtom(0, len, 'moov');
+  if (!moov) return result;
+  var moovStart = moov.offset + 8, moovEnd = moov.offset + moov.size;
+
+  var mvhd = findAtom(moovStart, moovEnd, 'mvhd');
+  if (mvhd) {
+    var mvhdOff = mvhd.offset + 8;
+    var version = bytes[mvhdOff];
+    var creationTime;
+    if (version === 0) { creationTime = read32(mvhdOff + 4); }
+    else { creationTime = read32(mvhdOff + 8); }
+    if (creationTime > 0) {
+      var epoch = new Date(1904, 0, 1).getTime();
+      var date = new Date(epoch + creationTime * 1000);
+      if (date.getFullYear() > 1970 && date.getFullYear() < 2100) {
+        result.creationDate = date.toISOString().replace('T', ' ').slice(0, 19);
+      }
+    }
+  }
+
+  var udta = findAtom(moovStart, moovEnd, 'udta');
+  if (udta) {
+    var udtaStart = udta.offset + 8, udtaEnd = udta.offset + udta.size;
+    var xyz = findAtom(udtaStart, udtaEnd, '\xA9xyz');
+    if (xyz) {
+      var dataOff = xyz.offset + 8;
+      var dataLen = xyz.size - 8;
+      var textStart = dataOff;
+      if (dataLen > 4) { textStart = dataOff + 4; dataLen -= 4; }
+      var gpsStr = readStr(textStart, Math.min(dataLen, 64));
+      result.gps = parseISO6709(gpsStr);
+    }
+  }
+
+  if (!result.gps) {
+    var meta = findAtom(moovStart, moovEnd, 'meta');
+    if (meta) {
+      var metaStart = meta.offset + 12, metaEnd = meta.offset + meta.size;
+      var ilst = findAtom(metaStart, metaEnd, 'ilst');
+      if (ilst) {
+        var ilstStart = ilst.offset + 8, ilstEnd = ilst.offset + ilst.size;
+        var xyz2 = findAtom(ilstStart, ilstEnd, '\xA9xyz');
+        if (xyz2) {
+          var dataAtom = findAtom(xyz2.offset + 8, xyz2.offset + xyz2.size, 'data');
+          if (dataAtom) {
+            var txtOff = dataAtom.offset + 16;
+            var txtLen = dataAtom.size - 16;
+            var gpsStr2 = readStr(txtOff, Math.min(txtLen, 64));
+            result.gps = parseISO6709(gpsStr2);
+          }
+        }
+      }
+    }
+  }
+
+  return result;
+}
+
 export function parseHEIF(bytes, info) {
   function read32At(off) { return (bytes[off]<<24)|(bytes[off+1]<<16)|(bytes[off+2]<<8)|bytes[off+3]; }
   var scanEnd = Math.min(bytes.length, 500000);

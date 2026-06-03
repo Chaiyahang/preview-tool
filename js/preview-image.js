@@ -18,11 +18,12 @@ export function getDimensions(file, info) {
   });
 }
 
-export function reverseGeocode(lat, lng) {
+export function reverseGeocode(lat, lng, elementId) {
+  var targetId = elementId || 'gps-location-text';
   fetch('https://nominatim.openstreetmap.org/reverse?format=json&lat=' + lat + '&lon=' + lng + '&zoom=16&accept-language=zh')
     .then(function(r) { return r.json(); })
     .then(function(d) {
-      var el = document.getElementById('gps-location-text');
+      var el = document.getElementById(targetId);
       if (el && d.display_name) { el.textContent = d.display_name; }
     }).catch(function() {});
 }
