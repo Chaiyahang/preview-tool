@@ -151,18 +151,45 @@ function updateDimensionLabels(w, h) {
   wrap.querySelectorAll('.img-dimension-label').forEach(function(el) { el.remove(); });
   var oldGrid = wrap.querySelector('.img-grid-label'); if (oldGrid) oldGrid.remove();
   if (!w || !h) return;
-  var wLabel = document.createElement('span');
-  wLabel.className = 'img-dimension-label width-label';
-  wLabel.textContent = w + ' px';
-  var hLabel = document.createElement('span');
-  hLabel.className = 'img-dimension-label height-label';
-  hLabel.textContent = h + ' px';
-  wrap.appendChild(wLabel);
-  wrap.appendChild(hLabel);
+
   var gridLabel = document.createElement('span');
   gridLabel.className = 'img-grid-label';
   gridLabel.textContent = '20×20 px';
   wrap.appendChild(gridLabel);
+
+  function positionLabels() {
+    wrap.querySelectorAll('.img-dimension-label').forEach(function(el) { el.remove(); });
+    var imgEl = document.getElementById('img-preview-el');
+    var canvas = document.getElementById('pag-canvas');
+    var target = canvas || imgEl;
+    if (!target || (!target.offsetWidth && !target.naturalWidth)) return;
+
+    var wrapRect = wrap.getBoundingClientRect();
+    var imgRect = target.getBoundingClientRect();
+    var imgLeft = imgRect.left - wrapRect.left;
+    var imgTop = imgRect.top - wrapRect.top;
+    var imgW = imgRect.width;
+    var imgH = imgRect.height;
+
+    var wLabel = document.createElement('span');
+    wLabel.className = 'img-dimension-label width-label';
+    wLabel.textContent = w + ' px';
+    wLabel.style.left = (imgLeft + imgW / 2) + 'px';
+    wLabel.style.top = (imgTop + imgH + 4) + 'px';
+    wrap.appendChild(wLabel);
+
+    var hLabel = document.createElement('span');
+    hLabel.className = 'img-dimension-label height-label';
+    hLabel.textContent = h + ' px';
+    hLabel.style.left = (imgLeft + imgW + 6) + 'px';
+    hLabel.style.top = (imgTop + imgH / 2) + 'px';
+    wrap.appendChild(hLabel);
+  }
+
+  var imgEl = document.getElementById('img-preview-el');
+  if (imgEl && imgEl.complete && imgEl.naturalWidth) { positionLabels(); }
+  else if (imgEl) { imgEl.addEventListener('load', positionLabels, { once: true }); }
+  setTimeout(positionLabels, 200);
 }
 
 // Image zoom viewer
