@@ -177,7 +177,7 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--t
   </div>
   <div class="header-meta">
     <div class="info-pill" id="info-badge"></div>
-    <button class="btn-reset" onclick="resetAll()">Reset</button>
+    <button class="btn-reset" onclick="resetAll()" title="Clear all and start over">Reset</button>
   </div>
 </div>
 
@@ -231,7 +231,7 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--t
 
     <div class="preview-container hidden" id="preview-lottie">
       <div id="lottie-player"></div>
-      <div class="float-browse" onclick="toggleMenu('lottie-float')">
+      <div class="float-browse" onclick="toggleMenu('lottie-float')" title="Load new files">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
         <div class="select-menu" id="menu-lottie-float">
           <label onclick="closeMenu()"><svg viewBox="0 0 24 24"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg> Folder<input type="file" id="lottie-folder2" webkitdirectory multiple></label>
@@ -242,7 +242,7 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--t
     </div>
     <div class="img-preview-container hidden" id="preview-image">
       <div class="img-preview-wrap"><img id="img-preview-el" src="" alt=""></div>
-      <div class="float-browse" onclick="toggleMenu('image-float')">
+      <div class="float-browse" onclick="toggleMenu('image-float')" title="Load new files">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
         <div class="select-menu" id="menu-image-float">
           <label onclick="closeMenu()"><svg viewBox="0 0 24 24"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg> Folder<input type="file" id="img-folder2" webkitdirectory multiple></label>
@@ -311,15 +311,15 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--t
 </div>
 
 <div class="controls hidden" id="controls">
-  <button class="ctrl-btn" id="btn-play" onclick="togglePlay()">&#9654;</button>
-  <button class="ctrl-btn" id="btn-stop" onclick="stopAnim()">&#9632;</button>
+  <button class="ctrl-btn" id="btn-play" onclick="togglePlay()" title="Play / Pause">&#9654;</button>
+  <button class="ctrl-btn" id="btn-stop" onclick="stopAnim()" title="Stop">&#9632;</button>
   <div class="progress-wrap">
     <div class="progress-bar" id="progress-bar" onclick="seekAnim(event)">
       <div class="progress-fill" id="progress-fill"></div>
     </div>
     <div class="progress-time" id="progress-time">0 / 0</div>
   </div>
-  <button class="ctrl-btn" id="btn-loop" onclick="toggleLoop()">&#10227;</button>
+  <button class="ctrl-btn" id="btn-loop" onclick="toggleLoop()" title="Toggle loop">&#10227;</button>
   <select class="speed-select" onchange="changeSpeed(this.value)">
     <option value="0.25">0.25x</option>
     <option value="0.5">0.5x</option>
@@ -329,10 +329,10 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--t
     <option value="3">3x</option>
   </select>
   <div class="bg-control">
-    <div class="bg-dot dark active" onclick="setBg('#0F172A', this)"></div>
-    <div class="bg-dot white" onclick="setBg('#F8FAFC', this)"></div>
-    <div class="bg-dot gray" onclick="setBg('#64748B', this)"></div>
-    <div class="bg-dot checker" onclick="setBg('checker', this)"></div>
+    <div class="bg-dot dark active" onclick="setBg('#0F172A', this)" title="Dark background"></div>
+    <div class="bg-dot white" onclick="setBg('#F8FAFC', this)" title="Light background"></div>
+    <div class="bg-dot gray" onclick="setBg('#64748B', this)" title="Gray background"></div>
+    <div class="bg-dot checker" onclick="setBg('checker', this)" title="Checkerboard"></div>
   </div>
 </div>
 
