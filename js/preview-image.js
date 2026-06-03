@@ -57,6 +57,7 @@ export async function showImagePreview(filePath) {
   var controls = document.getElementById('controls');
 
   hideAllPreviews(); previewImage.classList.remove('hidden'); controls.classList.add('hidden');
+  cleanupPAGView();
   var lower = filePath.toLowerCase();
   if (lower.endsWith('.pag')) {
     try { await renderPAGPreview(file, imgPreviewEl); }
@@ -92,6 +93,7 @@ export async function showImagePreview(filePath) {
 
 async function renderPAGPreview(file, imgEl) {
   if (!window.libpag) { imgEl.src = ''; return; }
+  cleanupPAGView();
   var PAG = await window.libpag.PAGInit({
     locateFile: function(f) { return 'https://cdn.jsdelivr.net/npm/libpag@4.2.81/lib/' + f; }
   });
@@ -100,9 +102,29 @@ async function renderPAGPreview(file, imgEl) {
   var w = pagFile.width(), h = pagFile.height();
   var canvas = document.createElement('canvas');
   canvas.width = w; canvas.height = h;
+  canvas.id = 'pag-canvas';
+  canvas.style.maxWidth = '100%';
+  canvas.style.maxHeight = '100%';
+  canvas.style.objectFit = 'contain';
+  canvas.style.borderRadius = '12px';
+  canvas.style.boxShadow = '0 12px 48px rgba(0,0,0,0.4)';
+  imgEl.style.display = 'none';
+  imgEl.parentElement.appendChild(canvas);
   var pagView = await PAG.PAGView.init(pagFile, canvas);
-  await pagView.flush();
-  imgEl.src = canvas.toDataURL('image/png');
-  pagView.destroy();
-  pagFile.destroy();
+  pagView.setRepeatCount(0);
+  await pagView.play();
+  activePAGView = pagView;
+  activePAGFile = pagFile;
+}
+
+var activePAGView = null;
+var activePAGFile = null;
+
+export function cleanupPAGView() {
+  if (activePAGView) { activePAGView.stop(); activePAGView.destroy(); activePAGView = null; }
+  if (activePAGFile) { activePAGFile.destroy(); activePAGFile = null; }
+  var oldCanvas = document.getElementById('pag-canvas');
+  if (oldCanvas) oldCanvas.remove();
+  var imgEl = document.getElementById('img-preview-el');
+  if (imgEl) imgEl.style.display = '';
 }

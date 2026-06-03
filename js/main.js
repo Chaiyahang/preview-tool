@@ -1,6 +1,6 @@
 // main.js — Entry point: state, mode switching, event binding, sidebar resizer
 import { playJson, togglePlay, stopAnim, toggleLoop, changeSpeed, seekAnim, setBg, updateProgress } from './preview-lottie.js';
-import { showImagePreview, formatSize } from './preview-image.js';
+import { showImagePreview, formatSize, cleanupPAGView } from './preview-image.js';
 import { showVideoPreview } from './preview-video.js';
 import { showFilePreview } from './preview-file.js';
 import { processEntries, processFiles, buildTree, getActiveDropZone, toggleMenu, closeMenu, isImageFile, isVideoFile } from './file-handler.js';
@@ -92,6 +92,7 @@ function resetAll() {
   var fileTree = document.getElementById('file-tree');
 
   if (state.anim) { state.anim.destroy(); state.anim = null; } cancelAnimationFrame(state.progressRAF);
+  cleanupPAGView();
   state.fileMap.clear(); state.animGroups = []; fileTree.innerHTML = ''; lottiePlayer.innerHTML = ''; lottiePlayer.style.background = '';
   imgPreviewEl.src = ''; imgInfoPanel.innerHTML = '';
   videoPlayer.src = ''; videoInfoPanel.innerHTML = '';
