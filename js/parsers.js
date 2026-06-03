@@ -156,20 +156,36 @@ export function parseMP4Location(bytes) {
   var result = { gps: null, creationDate: null };
   var len = bytes.length;
 
-  function read32(off) { return (bytes[off]<<24)|(bytes[off+1]<<16)|(bytes[off+2]<<8)|bytes[off+3]; }
-  function readStr(off, n) { var s = ''; for (var i = 0; i < n; i++) s += String.fromCharCode(bytes[off+i]); return s; }
+  function read32(off) { return ((bytes[off]<<24)|(bytes[off+1]<<16)|(bytes[off+2]<<8)|bytes[off+3]) >>> 0; }
+  function readStr(off, n) { var s = ''; for (var i = 0; i < n && off + i < len; i++) s += String.fromCharCode(bytes[off+i]); return s; }
 
   function findAtom(start, end, target) {
     var off = start;
     while (off + 8 <= end) {
       var size = read32(off);
       var type = readStr(off + 4, 4);
+      if (size === 1 && off + 16 <= end) { size = read32(off + 12); off += 8; }
       if (size < 8) { if (size === 0) size = end - off; else break; }
       if (off + size > end) break;
       if (type === target) return { offset: off, size: size };
       off += size;
     }
     return null;
+  }
+
+  function findAllAtoms(start, end) {
+    var atoms = [];
+    var off = start;
+    while (off + 8 <= end) {
+      var size = read32(off);
+      var type = readStr(off + 4, 4);
+      if (size === 1 && off + 16 <= end) { size = read32(off + 12); }
+      if (size < 8) { if (size === 0) size = end - off; else break; }
+      if (off + size > end) break;
+      atoms.push({ offset: off, size: size, type: type });
+      off += size;
+    }
+    return atoms;
   }
 
   function parseISO6709(str) {
@@ -184,6 +200,7 @@ export function parseMP4Location(bytes) {
   if (!moov) return result;
   var moovStart = moov.offset + 8, moovEnd = moov.offset + moov.size;
 
+  // mvhd — creation time
   var mvhd = findAtom(moovStart, moovEnd, 'mvhd');
   if (mvhd) {
     var mvhdOff = mvhd.offset + 8;
@@ -200,6 +217,7 @@ export function parseMP4Location(bytes) {
     }
   }
 
+  // Method 1: udta/©xyz (legacy QuickTime)
   var udta = findAtom(moovStart, moovEnd, 'udta');
   if (udta) {
     var udtaStart = udta.offset + 8, udtaEnd = udta.offset + udta.size;
@@ -214,22 +232,99 @@ export function parseMP4Location(bytes) {
     }
   }
 
+  // Method 2: meta/keys + meta/ilst (Apple mdta format, modern iPhone MOV)
   if (!result.gps) {
     var meta = findAtom(moovStart, moovEnd, 'meta');
     if (meta) {
-      var metaStart = meta.offset + 12, metaEnd = meta.offset + meta.size;
-      var ilst = findAtom(metaStart, metaEnd, 'ilst');
-      if (ilst) {
-        var ilstStart = ilst.offset + 8, ilstEnd = ilst.offset + ilst.size;
-        var xyz2 = findAtom(ilstStart, ilstEnd, '\xA9xyz');
-        if (xyz2) {
-          var dataAtom = findAtom(xyz2.offset + 8, xyz2.offset + xyz2.size, 'data');
-          if (dataAtom) {
-            var txtOff = dataAtom.offset + 16;
-            var txtLen = dataAtom.size - 16;
-            var gpsStr2 = readStr(txtOff, Math.min(txtLen, 64));
-            result.gps = parseISO6709(gpsStr2);
+      var metaDataStart = meta.offset + 8;
+      // meta atom may have a 4-byte version/flags field (fullbox)
+      if (bytes[metaDataStart] === 0 && bytes[metaDataStart+1] === 0 && bytes[metaDataStart+2] === 0) {
+        metaDataStart += 4;
+      }
+      var metaEnd = meta.offset + meta.size;
+
+      // Try keys-based approach first (modern Apple format)
+      var keys = findAtom(metaDataStart, metaEnd, 'keys');
+      var ilst = findAtom(metaDataStart, metaEnd, 'ilst');
+      if (keys && ilst) {
+        var keysOff = keys.offset + 8;
+        var keysVersion = read32(keysOff); // version + flags
+        var keyCount = read32(keysOff + 4);
+        var keyNames = [];
+        var kOff = keysOff + 8;
+        for (var ki = 0; ki < keyCount && kOff + 8 <= keys.offset + keys.size; ki++) {
+          var keySize = read32(kOff);
+          var keyName = readStr(kOff + 8, keySize - 8);
+          keyNames.push(keyName);
+          kOff += keySize;
+        }
+
+        // Find location key index
+        var locIdx = -1, dateIdx = -1;
+        for (var ki = 0; ki < keyNames.length; ki++) {
+          if (keyNames[ki].indexOf('location.ISO6709') !== -1) locIdx = ki;
+          if (keyNames[ki].indexOf('creationdate') !== -1) dateIdx = ki;
+        }
+
+        // Parse ilst entries (1-based index as atom type)
+        if (locIdx >= 0 || dateIdx >= 0) {
+          var ilstStart = ilst.offset + 8, ilstEnd = ilst.offset + ilst.size;
+          var ilstAtoms = findAllAtoms(ilstStart, ilstEnd);
+          for (var ai = 0; ai < ilstAtoms.length; ai++) {
+            var atom = ilstAtoms[ai];
+            // In mdta format, the atom type is a big-endian index (1-based)
+            var idx = read32(atom.offset + 4) - 1;
+            if (idx === locIdx) {
+              var dataAtom = findAtom(atom.offset + 8, atom.offset + atom.size, 'data');
+              if (dataAtom) {
+                var txtOff = dataAtom.offset + 16;
+                var txtLen = dataAtom.size - 16;
+                var gpsStr2 = readStr(txtOff, Math.min(txtLen, 128));
+                result.gps = parseISO6709(gpsStr2);
+              }
+            }
+            if (idx === dateIdx && !result.creationDate) {
+              var dataAtom2 = findAtom(atom.offset + 8, atom.offset + atom.size, 'data');
+              if (dataAtom2) {
+                var dtOff = dataAtom2.offset + 16;
+                var dtLen = dataAtom2.size - 16;
+                var dtStr = readStr(dtOff, Math.min(dtLen, 64));
+                if (dtStr.length >= 10) {
+                  result.creationDate = dtStr.replace('T', ' ').replace('Z', '').slice(0, 19);
+                }
+              }
+            }
           }
+        }
+      }
+
+      // Fallback: ilst/©xyz (iTunes-style)
+      if (!result.gps && ilst) {
+        var ilstStart2 = ilst.offset + 8, ilstEnd2 = ilst.offset + ilst.size;
+        var xyz2 = findAtom(ilstStart2, ilstEnd2, '\xA9xyz');
+        if (xyz2) {
+          var dataAtom3 = findAtom(xyz2.offset + 8, xyz2.offset + xyz2.size, 'data');
+          if (dataAtom3) {
+            var txtOff2 = dataAtom3.offset + 16;
+            var txtLen2 = dataAtom3.size - 16;
+            var gpsStr3 = readStr(txtOff2, Math.min(txtLen2, 64));
+            result.gps = parseISO6709(gpsStr3);
+          }
+        }
+      }
+    }
+  }
+
+  // Method 3: brute-force scan for ISO 6709 pattern in udta area
+  if (!result.gps && udta) {
+    var scanStart = udta.offset, scanEnd = Math.min(udta.offset + udta.size, len);
+    for (var i = scanStart; i < scanEnd - 20; i++) {
+      if (bytes[i] === 0x2B || bytes[i] === 0x2D) { // + or -
+        var snippet = readStr(i, Math.min(30, scanEnd - i));
+        var gps = parseISO6709(snippet);
+        if (gps && Math.abs(gps.lat) <= 90 && Math.abs(gps.lng) <= 180) {
+          result.gps = gps;
+          break;
         }
       }
     }

@@ -10,6 +10,27 @@ function formatDuration(seconds) {
   return m + ':' + ('0' + s).slice(-2);
 }
 
+function renderVideoInfo(videoPlayer, file, videoMeta, videoInfoPanel, infoBadge) {
+  var html = '';
+  html += infoItem('Filename', file.name);
+  html += infoItem('Format', (file.name.split('.').pop() || '').toUpperCase());
+  html += infoItem('Resolution', videoPlayer.videoWidth + ' × ' + videoPlayer.videoHeight + ' px');
+  html += infoItem('Duration', formatDuration(videoPlayer.duration));
+  html += infoItem('File Size', formatSize(file.size));
+  if (videoMeta && videoMeta.creationDate) {
+    html += infoItem('Creation Date', videoMeta.creationDate);
+  }
+  if (videoMeta && videoMeta.gps) {
+    var amapUrl = 'https://uri.amap.com/marker?position=' + videoMeta.gps.lng + ',' + videoMeta.gps.lat + '&name=' + encodeURIComponent('拍摄位置');
+    html += infoItem('Location', '<span id="video-gps-location-text">' + videoMeta.gps.lat.toFixed(6) + ', ' + videoMeta.gps.lng.toFixed(6) + '</span> <a href="' + amapUrl + '" target="_blank" style="color:var(--accent);text-decoration:none;margin-left:6px">高德地图 ↗</a>');
+  }
+  videoInfoPanel.innerHTML = html;
+  infoBadge.textContent = (file.name.split('.').pop() || '').toUpperCase() + ' · ' + videoPlayer.videoWidth + 'x' + videoPlayer.videoHeight + ' · ' + formatDuration(videoPlayer.duration);
+  if (videoMeta && videoMeta.gps) {
+    reverseGeocode(videoMeta.gps.lat, videoMeta.gps.lng, 'video-gps-location-text');
+  }
+}
+
 export async function showVideoPreview(filePath) {
   var currentMode = state.currentMode;
   var fileMap = state.fileMap;
@@ -25,37 +46,35 @@ export async function showVideoPreview(filePath) {
   var controls = document.getElementById('controls');
 
   hideAllPreviews(); previewVideo.classList.remove('hidden'); controls.classList.add('hidden');
+
+  var metaReady = false;
+  var playerReady = false;
+  var videoMeta = null;
+
+  function tryRender() {
+    if (metaReady && playerReady) {
+      renderVideoInfo(videoPlayer, file, videoMeta, videoInfoPanel, infoBadge);
+    }
+  }
+
+  videoPlayer.onloadedmetadata = function() {
+    playerReady = true;
+    tryRender();
+  };
+
   var url = URL.createObjectURL(file);
   videoPlayer.src = url;
   videoPlayer.style.display = '';
   infoBadge.style.display = '';
   infoBadge.textContent = file.name + ' · ' + formatSize(file.size);
 
-  var videoMeta = null;
   try {
     var buffer = await file.arrayBuffer();
     var bytes = new Uint8Array(buffer);
     videoMeta = parseMP4Location(bytes);
   } catch(e) {}
+  metaReady = true;
 
-  videoPlayer.onloadedmetadata = function() {
-    var html = '';
-    html += infoItem('Filename', file.name);
-    html += infoItem('Format', (file.name.split('.').pop() || '').toUpperCase());
-    html += infoItem('Resolution', videoPlayer.videoWidth + ' × ' + videoPlayer.videoHeight + ' px');
-    html += infoItem('Duration', formatDuration(videoPlayer.duration));
-    html += infoItem('File Size', formatSize(file.size));
-    if (videoMeta && videoMeta.creationDate) {
-      html += infoItem('Creation Date', videoMeta.creationDate);
-    }
-    if (videoMeta && videoMeta.gps) {
-      var amapUrl = 'https://uri.amap.com/marker?position=' + videoMeta.gps.lng + ',' + videoMeta.gps.lat + '&name=' + encodeURIComponent('拍摄位置');
-      html += infoItem('Location', '<span id="video-gps-location-text">' + videoMeta.gps.lat.toFixed(6) + ', ' + videoMeta.gps.lng.toFixed(6) + '</span> <a href="' + amapUrl + '" target="_blank" style="color:var(--accent);text-decoration:none;margin-left:6px">高德地图 ↗</a>');
-    }
-    videoInfoPanel.innerHTML = html;
-    infoBadge.textContent = (file.name.split('.').pop() || '').toUpperCase() + ' · ' + videoPlayer.videoWidth + 'x' + videoPlayer.videoHeight + ' · ' + formatDuration(videoPlayer.duration);
-    if (videoMeta && videoMeta.gps) {
-      reverseGeocode(videoMeta.gps.lat, videoMeta.gps.lng, 'video-gps-location-text');
-    }
-  };
+  if (videoPlayer.readyState >= 1) { playerReady = true; }
+  tryRender();
 }
