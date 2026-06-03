@@ -76,6 +76,7 @@ export async function showImagePreview(filePath) {
   if (previewCallId !== thisCallId) return;
   infoBadge.style.display = '';
   infoBadge.textContent = info.format + (info.animated ? ' (Animated)' : '') + '  ·  ' + info.width + 'x' + info.height;
+  updateDimensionLabels(info.width, info.height);
   var html = '';
   html += infoItem('Format', info.format);
   html += infoItem('Dimensions', info.width + ' × ' + info.height + ' px');
@@ -143,6 +144,20 @@ export function cleanupPAGView() {
   if (oldCanvas) oldCanvas.remove();
   var imgEl = document.getElementById('img-preview-el');
   if (imgEl) imgEl.style.display = '';
+}
+
+function updateDimensionLabels(w, h) {
+  var wrap = document.querySelector('.img-preview-wrap');
+  wrap.querySelectorAll('.img-dimension-label').forEach(function(el) { el.remove(); });
+  if (!w || !h) return;
+  var wLabel = document.createElement('span');
+  wLabel.className = 'img-dimension-label width-label';
+  wLabel.textContent = w + ' px';
+  var hLabel = document.createElement('span');
+  hLabel.className = 'img-dimension-label height-label';
+  hLabel.textContent = h + ' px';
+  wrap.appendChild(wLabel);
+  wrap.appendChild(hLabel);
 }
 
 // Image zoom viewer
