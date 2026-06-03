@@ -1,0 +1,28 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "preview-tool",
+  "compatibility_date": "2026-06-03",
+  "assets": {
+    "directory": ".",
+    "not_found_handling": "single-page-application",
+    "html_handling": "auto-trailing-slash"
+  },
+  "observability": {
+    "enabled": true
+  },
+  "compatibility_flags": [
+    "nodejs_compat"
+  ],
+  "upload": {
+    "exclude": [
+      "node_modules",
+      ".git",
+      ".claude",
+      ".wrangler",
+      "dist",
+      ".gitignore",
+      "CLAUDE.md",
+      "package-lock.json"
+    ]
+  }
+}
