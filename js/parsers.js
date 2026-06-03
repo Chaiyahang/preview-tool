@@ -202,7 +202,7 @@ export function parseMP4Location(bytes) {
   if (!moov) return result;
   var moovStart = moov.offset + 8, moovEnd = moov.offset + moov.size;
 
-  // === mvhd: creation time ===
+  // === mvhd: creation time (UTC, low priority — mdta will override if present) ===
   var mvhd = findAtom(moovStart, moovEnd, 'mvhd');
   if (mvhd) {
     var mvhdOff = mvhd.offset + 8;
@@ -214,7 +214,8 @@ export function parseMP4Location(bytes) {
       var epoch = new Date(1904, 0, 1).getTime();
       var date = new Date(epoch + creationTime * 1000);
       if (date.getFullYear() > 1970 && date.getFullYear() < 2100) {
-        result.creationDate = date.toISOString().replace('T', ' ').slice(0, 19);
+        var pad = function(n) { return n < 10 ? '0' + n : '' + n; };
+        result.creationDate = date.getFullYear() + '-' + pad(date.getMonth()+1) + '-' + pad(date.getDate()) + ' ' + pad(date.getHours()) + ':' + pad(date.getMinutes()) + ':' + pad(date.getSeconds());
       }
     }
   }
@@ -282,14 +283,20 @@ export function parseMP4Location(bytes) {
                 result.gps = parseISO6709(gpsStr2);
               }
             }
-            if (idx === dateIdx && !result.creationDate) {
+            if (idx === dateIdx) {
               var dataAtom2 = findAtom(atom.offset + 8, atom.offset + atom.size, 'data');
               if (dataAtom2) {
                 var dtOff = dataAtom2.offset + 16;
                 var dtLen = dataAtom2.size - 16;
                 var dtStr = readStr(dtOff, Math.min(dtLen, 64));
                 if (dtStr.length >= 10) {
-                  result.creationDate = dtStr.replace('T', ' ').replace('Z', '').slice(0, 19);
+                  var d = new Date(dtStr);
+                  if (!isNaN(d.getTime())) {
+                    var pad2 = function(n) { return n < 10 ? '0' + n : '' + n; };
+                    result.creationDate = d.getFullYear() + '-' + pad2(d.getMonth()+1) + '-' + pad2(d.getDate()) + ' ' + pad2(d.getHours()) + ':' + pad2(d.getMinutes()) + ':' + pad2(d.getSeconds());
+                  } else {
+                    result.creationDate = dtStr.replace('T', ' ').replace('Z', '').slice(0, 19);
+                  }
                 }
               }
             }
