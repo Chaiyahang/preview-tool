@@ -1,0 +1,29 @@
+{
+  "name": "preview-tool",
+  "version": "1.0.0",
+  "description": "多媒体预览工具 — Lottie / Image / Video / File",
+  "main": "electron-main.js",
+  "scripts": {
+    "start": "electron .",
+    "build": "electron-builder --mac",
+    "build:dmg": "electron-builder --mac dmg"
+  },
+  "devDependencies": {
+    "electron": "^33.0.0",
+    "electron-builder": "^25.0.0"
+  },
+  "build": {
+    "appId": "com.previewtool.app",
+    "productName": "Preview Tool",
+    "mac": {
+      "category": "public.app-category.utilities",
+      "target": ["dmg"],
+      "icon": "icon.icns"
+    },
+    "files": [
+      "index.html",
+      "style.css",
+      "js/**/*"
+    ]
+  }
+}
