@@ -171,6 +171,9 @@ function updateDimensionLabels(w, h) {
     var imgW = imgRect.width;
     var imgH = imgRect.height;
 
+    wrap.style.setProperty('--grid-offset-x', (imgLeft % 20) + 'px');
+    wrap.style.setProperty('--grid-offset-y', (imgTop % 20) + 'px');
+
     var wLabel = document.createElement('span');
     wLabel.className = 'img-dimension-label width-label';
     wLabel.textContent = w + ' px';
