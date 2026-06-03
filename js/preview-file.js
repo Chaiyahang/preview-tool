@@ -155,6 +155,7 @@ export async function showFilePreview(filePath) {
   var name = file.name.toLowerCase();
   if (name.endsWith('.pdf')) { showDocPreview(file, 'PDF'); return; }
   if (name.endsWith('.epub')) { showEpubPreview(file); return; }
+  if (name.endsWith('.sqlite') || name.endsWith('.db') || name.endsWith('.sqlite3')) { showSqlitePreview(file); return; }
 
   var previewFile = document.getElementById('preview-file');
   var filePreviewHeader = document.getElementById('file-preview-header');
@@ -164,6 +165,7 @@ export async function showFilePreview(filePath) {
   var controls = document.getElementById('controls');
 
   hideAllPreviews(); previewFile.classList.remove('hidden'); controls.classList.add('hidden');
+  var oldViewer = previewFile.querySelector('.sqlite-viewer'); if (oldViewer) oldViewer.remove();
   infoBadge.style.display = '';
   infoBadge.textContent = file.name + ' · ' + formatSize(file.size);
   var buffer = await file.arrayBuffer();
@@ -194,3 +196,90 @@ export async function showFilePreview(filePath) {
     fileContent.innerHTML = '<span class="line">' + escaped.split('\n').join('</span>\n<span class="line">') + '</span>';
   }
 }
+
+async function showSqlitePreview(file) {
+  var modeState = state.modeState;
+  var currentMode = state.currentMode;
+  var fileMap = state.fileMap;
+  var filePath = Array.from(fileMap.keys()).find(function(k) { return fileMap.get(k) === file; }) || file.name;
+  modeState[currentMode].activeFile = filePath;
+  document.querySelectorAll('.tree-item').forEach(function(el) { el.classList.toggle('active', el.title === filePath); });
+
+  var previewFile = document.getElementById('preview-file');
+  var filePreviewHeader = document.getElementById('file-preview-header');
+  var fileContent = document.getElementById('file-content');
+  var fileHex = document.getElementById('file-hex');
+  var infoBadge = document.getElementById('info-badge');
+  var controls = document.getElementById('controls');
+
+  hideAllPreviews(); previewFile.classList.remove('hidden'); controls.classList.add('hidden');
+  infoBadge.style.display = '';
+  infoBadge.textContent = 'SQLite · ' + file.name + ' · ' + formatSize(file.size);
+  fileHex.classList.add('hidden'); fileHex.innerHTML = '';
+  fileContent.style.display = 'none'; fileContent.innerHTML = '';
+
+  var headerHtml = '';
+  headerHtml += '<span class="fph-item"><span class="fph-label">Name:</span><span class="fph-value">' + file.name + '</span></span>';
+  headerHtml += '<span class="fph-item"><span class="fph-label">Size:</span><span class="fph-value">' + formatSize(file.size) + '</span></span>';
+  headerHtml += '<span class="fph-item"><span class="fph-label">Type:</span><span class="fph-value" style="color:var(--accent)">SQLite Database</span></span>';
+
+  try {
+    var SQL = await window.initSqlJs({ locateFile: function(f) { return 'https://cdn.jsdelivr.net/npm/sql.js@1.10.3/dist/' + f; } });
+    var buffer = await file.arrayBuffer();
+    var db = new SQL.Database(new Uint8Array(buffer));
+    var tables = db.exec("SELECT name, type FROM sqlite_master WHERE type IN ('table','view') ORDER BY type, name");
+    var tableNames = tables.length > 0 ? tables[0].values : [];
+    headerHtml += '<span class="fph-item"><span class="fph-label">Tables:</span><span class="fph-value">' + tableNames.length + '</span></span>';
+    filePreviewHeader.innerHTML = headerHtml;
+
+    var viewer = document.createElement('div');
+    viewer.className = 'sqlite-viewer';
+    var maxRows = 200;
+
+    for (var t = 0; t < tableNames.length; t++) {
+      var tName = tableNames[t][0], tType = tableNames[t][1];
+      var countResult = db.exec("SELECT COUNT(*) FROM \"" + tName.replace(/"/g, '""') + "\"");
+      var totalRows = countResult.length > 0 ? countResult[0].values[0][0] : 0;
+      var result = db.exec("SELECT * FROM \"" + tName.replace(/"/g, '""') + "\" LIMIT " + maxRows);
+
+      var h3 = document.createElement('h3');
+      h3.innerHTML = (tType === 'view' ? '📋 ' : '📄 ') + escapeHtml(tName) + '<span class="row-count">(' + totalRows.toLocaleString() + ' rows)</span>';
+      viewer.appendChild(h3);
+
+      if (result.length > 0) {
+        var cols = result[0].columns;
+        var rows = result[0].values;
+        var table = '<table><thead><tr>';
+        for (var c = 0; c < cols.length; c++) table += '<th>' + escapeHtml(cols[c]) + '</th>';
+        table += '</tr></thead><tbody>';
+        for (var r = 0; r < rows.length; r++) {
+          table += '<tr>';
+          for (var c = 0; c < cols.length; c++) {
+            var val = rows[r][c];
+            var display = val === null ? '<span style="color:var(--text-muted)">NULL</span>' : escapeHtml(String(val));
+            table += '<td title="' + escapeHtml(String(val || '')) + '">' + display + '</td>';
+          }
+          table += '</tr>';
+        }
+        table += '</tbody></table>';
+        if (totalRows > maxRows) table += '<div style="color:var(--text-muted);font-size:11px;margin-top:-16px;margin-bottom:20px">Showing ' + maxRows + ' of ' + totalRows.toLocaleString() + ' rows</div>';
+        viewer.innerHTML += h3.outerHTML + table;
+      } else {
+        viewer.appendChild(h3);
+        viewer.innerHTML += '<div style="color:var(--text-muted);font-size:12px;margin-bottom:20px">Empty table</div>';
+      }
+    }
+
+    db.close();
+    var container = document.getElementById('preview-file');
+    var existingViewer = container.querySelector('.sqlite-viewer');
+    if (existingViewer) existingViewer.remove();
+    container.appendChild(viewer);
+
+  } catch(e) {
+    headerHtml += '<span class="fph-item"><span class="fph-label">Error:</span><span class="fph-value" style="color:var(--destructive)">' + e.message + '</span></span>';
+    filePreviewHeader.innerHTML = headerHtml;
+  }
+}
+
+function escapeHtml(str) { return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
