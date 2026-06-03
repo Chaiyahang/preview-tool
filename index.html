@@ -77,6 +77,13 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--t
 .drop-text h2{font-size:18px;font-weight:600;margin-bottom:6px;letter-spacing:-0.4px}
 .drop-text p{font-size:13px;color:var(--text-muted);font-weight:400}
 .drop-hint{font-size:11px;color:var(--text-muted);opacity:.7;margin-top:-8px;letter-spacing:.2px}
+.float-browse{position:absolute;top:16px;right:16px;width:40px;height:40px;border-radius:10px;background:var(--bg-secondary);border:1px solid var(--border-hover);display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .2s ease;z-index:15;opacity:.6}
+.float-browse:hover{opacity:1;background:var(--accent);border-color:var(--accent);box-shadow:0 4px 16px var(--accent-glow)}
+.float-browse:hover svg{stroke:#fff}
+.float-browse svg{width:18px;height:18px;stroke:var(--text-secondary);fill:none;pointer-events:none}
+.float-browse .select-menu{top:calc(100% + 8px);right:0;left:auto;transform:none}
+.float-browse .select-menu.show{animation:menuFadeRight .15s ease}
+@keyframes menuFadeRight{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
 .drop-actions{position:relative;margin-top:12px}
 .select-btn{padding:10px 22px;border-radius:10px;border:1px solid var(--border-hover);background:var(--bg-secondary);color:var(--text);cursor:pointer;font-size:13px;font-weight:500;font-family:inherit;transition:all .25s ease;display:flex;align-items:center;gap:8px}
 .select-btn:hover{background:var(--accent);border-color:var(--accent);color:#fff;transform:translateY(-1px);box-shadow:0 6px 20px var(--accent-glow)}
@@ -224,9 +231,25 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--t
 
     <div class="preview-container hidden" id="preview-lottie">
       <div id="lottie-player"></div>
+      <div class="float-browse" onclick="toggleMenu('lottie-float')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+        <div class="select-menu" id="menu-lottie-float">
+          <label onclick="closeMenu()"><svg viewBox="0 0 24 24"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg> Folder<input type="file" id="lottie-folder2" webkitdirectory multiple></label>
+          <label onclick="closeMenu()"><svg viewBox="0 0 24 24"><path d="M21 8v13H3V8"/><path d="M1 3h22v5H1z"/><path d="M10 12h4"/></svg> ZIP<input type="file" id="lottie-zip2" accept=".zip"></label>
+          <label onclick="closeMenu()"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg> JSON<input type="file" id="lottie-json2" accept=".json" multiple></label>
+        </div>
+      </div>
     </div>
     <div class="img-preview-container hidden" id="preview-image">
       <div class="img-preview-wrap"><img id="img-preview-el" src="" alt=""></div>
+      <div class="float-browse" onclick="toggleMenu('image-float')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+        <div class="select-menu" id="menu-image-float">
+          <label onclick="closeMenu()"><svg viewBox="0 0 24 24"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg> Folder<input type="file" id="img-folder2" webkitdirectory multiple></label>
+          <label onclick="closeMenu()"><svg viewBox="0 0 24 24"><path d="M21 8v13H3V8"/><path d="M1 3h22v5H1z"/><path d="M10 12h4"/></svg> ZIP<input type="file" id="img-zip2" accept=".zip"></label>
+          <label onclick="closeMenu()"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg> Image<input type="file" id="img-file2" accept=".webp,.apng,.png,.gif,.jpg,.jpeg,.pag" multiple></label>
+        </div>
+      </div>
       <div class="img-info-panel" id="img-info-panel"></div>
     </div>
 
@@ -427,10 +450,10 @@ function getActiveDropZone() {
   return dropZoneFile;
 }
 
-['lottie-folder','lottie-zip','lottie-json'].forEach(function(id) {
+['lottie-folder','lottie-zip','lottie-json','lottie-folder2','lottie-zip2','lottie-json2'].forEach(function(id) {
   document.getElementById(id).addEventListener('change', function(e) { if (e.target.files.length > 0) processFiles(e.target.files); });
 });
-['img-folder','img-zip','img-file'].forEach(function(id) {
+['img-folder','img-zip','img-file','img-folder2','img-zip2','img-file2'].forEach(function(id) {
   document.getElementById(id).addEventListener('change', function(e) { if (e.target.files.length > 0) processFiles(e.target.files); });
 });
 ['video-folder','video-zip','video-file'].forEach(function(id) {
@@ -442,7 +465,7 @@ function getActiveDropZone() {
 
 function toggleMenu(type) { document.getElementById('menu-' + type).classList.toggle('show'); }
 function closeMenu() { setTimeout(function() { document.querySelectorAll('.select-menu').forEach(function(m) { m.classList.remove('show'); }); }, 100); }
-document.addEventListener('click', function(e) { if (!e.target.closest('.drop-actions')) closeMenu(); });
+document.addEventListener('click', function(e) { if (!e.target.closest('.drop-actions') && !e.target.closest('.float-browse')) closeMenu(); });
 
 function isHiddenFile(name) { if (name.startsWith('.')) return true; return HIDDEN_FILES.some(function(h) { return name === h || name.startsWith(h); }); }
 function isImageFile(name) { var lower = name.toLowerCase(); return IMG_EXTS.some(function(ext) { return lower.endsWith(ext); }); }
