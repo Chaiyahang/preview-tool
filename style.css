@@ -90,7 +90,7 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--t
 .preview-container.hidden,.img-preview-container.hidden{display:none}
 #lottie-player{width:80%;height:80%;max-width:560px;max-height:560px;border-radius:16px}
 .img-preview-container{flex-direction:column;gap:0;padding:28px}
-.img-preview-wrap{flex:1;display:flex;align-items:center;justify-content:center;width:100%;min-height:0;position:relative;background:repeating-conic-gradient(#1a2332 0% 25%,#151d2b 0% 50%) 50%/16px 16px}
+.img-preview-wrap{flex:1;display:flex;align-items:center;justify-content:center;width:100%;min-height:0;position:relative;background:repeating-conic-gradient(#1e293b 0% 25%,#0f172a 0% 50%) 0 0/8px 8px}
 .img-preview-wrap img{max-width:100%;max-height:100%;object-fit:contain;cursor:zoom-in}
 .img-dimension-label{position:absolute;font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--text-muted);background:rgba(15,23,42,0.8);padding:2px 6px;border-radius:4px;pointer-events:none;white-space:nowrap}
 .img-dimension-label.width-label{bottom:4px;left:50%;transform:translateX(-50%)}
