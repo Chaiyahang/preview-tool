@@ -63,7 +63,9 @@ export async function showVideoPreview(filePath) {
   };
 
   var url = URL.createObjectURL(file);
+  videoPlayer.preload = 'metadata';
   videoPlayer.src = url;
+  videoPlayer.load();
   videoPlayer.style.display = '';
   infoBadge.style.display = '';
   infoBadge.textContent = file.name + ' · ' + formatSize(file.size);
