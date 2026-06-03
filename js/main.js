@@ -145,10 +145,10 @@ document.body.addEventListener('drop', async function(e) {
 ['img-folder','img-zip','img-file','img-folder2','img-zip2','img-file2'].forEach(function(id) {
   document.getElementById(id).addEventListener('change', function(e) { if (e.target.files.length > 0) processFiles(e.target.files); });
 });
-['video-folder','video-zip','video-file'].forEach(function(id) {
+['video-folder','video-zip','video-file','video-folder2','video-zip2','video-file2'].forEach(function(id) {
   document.getElementById(id).addEventListener('change', function(e) { if (e.target.files.length > 0) processFiles(e.target.files); });
 });
-['file-folder','file-zip','file-any'].forEach(function(id) {
+['file-folder','file-zip','file-any','file-folder2','file-zip2','file-any2'].forEach(function(id) {
   document.getElementById(id).addEventListener('change', function(e) { if (e.target.files.length > 0) processFiles(e.target.files); });
 });
 
