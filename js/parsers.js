@@ -211,7 +211,7 @@ export function parseMP4Location(bytes) {
     if (version === 0) { creationTime = read32(mvhdOff + 4); }
     else { creationTime = read32(mvhdOff + 8); }
     if (creationTime > 0) {
-      var epoch = new Date(1904, 0, 1).getTime();
+      var epoch = Date.UTC(1904, 0, 1);
       var date = new Date(epoch + creationTime * 1000);
       if (date.getFullYear() > 1970 && date.getFullYear() < 2100) {
         var pad = function(n) { return n < 10 ? '0' + n : '' + n; };
