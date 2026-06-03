@@ -91,6 +91,7 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--t
 #lottie-player{width:80%;height:80%;max-width:560px;max-height:560px;border-radius:16px}
 .img-preview-container{flex-direction:column;gap:0;padding:28px}
 .img-preview-wrap{flex:1;display:flex;align-items:center;justify-content:center;width:100%;min-height:0;position:relative;background-color:#0f172a;background-image:linear-gradient(rgba(148,163,184,0.08) 1px,transparent 1px),linear-gradient(90deg,rgba(148,163,184,0.08) 1px,transparent 1px);background-size:20px 20px}
+.img-grid-label{position:absolute;top:6px;left:6px;font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--text-muted);opacity:.6;pointer-events:none}
 .img-preview-wrap img{max-width:100%;max-height:100%;object-fit:contain;cursor:zoom-in}
 .img-dimension-label{position:absolute;font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--text-muted);background:rgba(15,23,42,0.8);padding:2px 6px;border-radius:4px;pointer-events:none;white-space:nowrap}
 .img-dimension-label.width-label{bottom:4px;left:50%;transform:translateX(-50%)}

@@ -149,6 +149,7 @@ export function cleanupPAGView() {
 function updateDimensionLabels(w, h) {
   var wrap = document.querySelector('.img-preview-wrap');
   wrap.querySelectorAll('.img-dimension-label').forEach(function(el) { el.remove(); });
+  var oldGrid = wrap.querySelector('.img-grid-label'); if (oldGrid) oldGrid.remove();
   if (!w || !h) return;
   var wLabel = document.createElement('span');
   wLabel.className = 'img-dimension-label width-label';
@@ -158,6 +159,10 @@ function updateDimensionLabels(w, h) {
   hLabel.textContent = h + ' px';
   wrap.appendChild(wLabel);
   wrap.appendChild(hLabel);
+  var gridLabel = document.createElement('span');
+  gridLabel.className = 'img-grid-label';
+  gridLabel.textContent = '20×20 px';
+  wrap.appendChild(gridLabel);
 }
 
 // Image zoom viewer
