@@ -240,10 +240,15 @@ export function parseMP4Location(bytes) {
     var meta = findAtom(moovStart, moovEnd, 'meta');
     if (meta) {
       var metaDataStart = meta.offset + 8;
-      if (metaDataStart + 4 < meta.offset + meta.size) {
-        if (bytes[metaDataStart] === 0) { metaDataStart += 4; }
-      }
       var metaEnd = meta.offset + meta.size;
+      // Detect fullbox: check if bytes at +8 look like a child atom header
+      // If the 4 bytes at +12 form a known type (hdlr/keys/ilst), no fullbox prefix
+      if (metaDataStart + 8 < metaEnd) {
+        var firstChildType = readStr(metaDataStart + 4, 4);
+        if (firstChildType !== 'hdlr' && firstChildType !== 'keys' && firstChildType !== 'ilst' && firstChildType !== 'free') {
+          metaDataStart += 4;
+        }
+      }
 
       var keys = findAtom(metaDataStart, metaEnd, 'keys');
       var ilst = findAtom(metaDataStart, metaEnd, 'ilst');

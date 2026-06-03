@@ -242,7 +242,7 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--t
   .img-info-item .label{font-size:8px}
 
   /* Image preview — scrollable */
-  .img-preview-container{padding:12px;overflow-y:scroll;-webkit-overflow-scrolling:touch;justify-content:flex-start}
+  .img-preview-container{position:relative;inset:auto;width:100%;height:100%;padding:12px;overflow-y:scroll;-webkit-overflow-scrolling:touch;justify-content:flex-start}
 
   /* File preview — horizontal scroll */
   .file-content{font-size:12px;overflow-x:auto}
@@ -252,11 +252,11 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--t
   .file-preview-header{padding:10px 14px;font-size:10px;gap:6px 14px}
 
   /* Video preview — scrollable */
-  .video-preview-container{padding:12px;overflow-y:scroll;-webkit-overflow-scrolling:touch;justify-content:flex-start}
+  .video-preview-container{position:relative;inset:auto;width:100%;height:100%;padding:12px;overflow-y:scroll;-webkit-overflow-scrolling:touch;justify-content:flex-start}
   #video-player{max-width:100%;max-height:60vh;flex-shrink:0}
 
   /* Lottie preview — scrollable on small screens */
-  .preview-container{overflow-y:auto;-webkit-overflow-scrolling:touch}
+  .preview-container{overflow-y:scroll;-webkit-overflow-scrolling:touch}
 
   /* SQLite viewer — horizontal scroll */
   .sqlite-viewer{padding:12px;overflow-x:auto}
