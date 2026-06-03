@@ -6,162 +6,10 @@
 <title>Preview Tool</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/lottie-web/5.12.2/lottie.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/heic2any@0.0.4/dist/heic2any.min.js"></script>
-<style>
-*{margin:0;padding:0;box-sizing:border-box}
-:root{
-  --bg:#0F172A;--bg-secondary:#1E293B;--bg-tertiary:#334155;--bg-elevated:#475569;
-  --text:#F8FAFC;--text-secondary:#94A3B8;--text-muted:#64748B;
-  --accent:#22C55E;--accent-glow:rgba(34,197,94,0.15);--accent-subtle:rgba(34,197,94,0.06);
-  --border:rgba(71,85,105,0.4);--border-hover:rgba(71,85,105,0.7);
-  --destructive:#EF4444;
-  --amber:#FBBF24;--pink:#F472B6;--green:#22C55E;
-  --shadow:0 20px 60px -15px rgba(0,0,0,0.5);
-  --radius:12px;
-}
-body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--text);height:100vh;display:flex;flex-direction:column;overflow:hidden;-webkit-font-smoothing:antialiased}
-
-/* Header */
-.header{padding:0 20px;height:54px;background:var(--bg-secondary);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:20px;position:relative}
-.header::after{content:'';position:absolute;bottom:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,var(--accent-glow),transparent)}
-.header-brand{display:flex;align-items:center;gap:12px}
-.header-logo{width:32px;height:32px;border-radius:9px;background:var(--accent);display:flex;align-items:center;justify-content:center;box-shadow:0 0 16px var(--accent-glow),inset 0 1px 0 rgba(255,255,255,0.15)}
-.header-logo svg{width:16px;height:16px;color:#fff;fill:none;stroke:currentColor;stroke-width:2.5}
-.header h1{font-size:14px;font-weight:600;letter-spacing:-0.3px;color:var(--text)}
-.tab-bar{display:flex;gap:2px;background:rgba(15,23,42,0.6);padding:3px;border-radius:10px;border:1px solid var(--border)}
-.tab-btn{padding:6px 18px;border-radius:8px;border:none;background:transparent;color:var(--text-muted);cursor:pointer;font-size:12px;font-weight:600;font-family:inherit;transition:all .2s ease}
-.tab-btn.active{background:var(--bg-tertiary);color:var(--text);box-shadow:0 1px 4px rgba(0,0,0,0.3)}
-.tab-btn:hover:not(.active){color:var(--text-secondary)}
-.header-meta{display:flex;align-items:center;gap:10px;margin-left:auto}
-.info-pill{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--accent);background:var(--accent-subtle);padding:5px 12px;border-radius:6px;border:1px solid rgba(34,197,94,0.12);display:none;font-weight:500;text-shadow:0 0 8px var(--accent-glow)}
-.btn-reset{padding:6px 14px;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--text-muted);cursor:pointer;font-size:12px;font-weight:500;font-family:inherit;transition:all .2s}
-.btn-reset:hover{background:rgba(239,68,68,0.08);border-color:rgba(239,68,68,0.3);color:var(--destructive)}
-
-/* Main */
-.main{flex:1;display:flex;overflow:hidden}
-
-/* Sidebar */
-.sidebar{width:228px;min-width:140px;max-width:450px;background:var(--bg-secondary);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden;position:relative}
-.sidebar-resizer{position:absolute;top:0;right:-3px;width:6px;height:100%;cursor:col-resize;z-index:20}
-.sidebar-resizer:hover,.sidebar-resizer.active{background:var(--accent);opacity:.4;border-radius:3px}
-.sidebar-header{padding:18px 18px 12px;font-size:10px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:1.5px}
-.file-tree{flex:1;overflow-y:auto;padding:0 8px 12px}
-.file-tree::-webkit-scrollbar{width:4px}
-.file-tree::-webkit-scrollbar-thumb{background:var(--bg-tertiary);border-radius:2px}
-.file-tree:empty::after{content:'Drop files to start';display:flex;align-items:center;justify-content:center;height:140px;font-size:12px;color:var(--text-muted);opacity:.6}
-.tree-item{padding:7px 10px;font-size:12px;cursor:pointer;display:flex;align-items:center;gap:9px;border-radius:8px;transition:all .12s ease;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--text-secondary);margin:1px 0}
-.tree-item:hover{background:var(--bg-tertiary);color:var(--text)}
-.tree-item.active{background:var(--accent-subtle);color:var(--accent);font-weight:600;text-shadow:0 0 8px var(--accent-glow)}
-.tree-icon{width:20px;height:20px;border-radius:5px;display:flex;align-items:center;justify-content:center;font-size:10px;flex-shrink:0}
-.tree-icon.folder{background:rgba(251,191,36,0.1);color:var(--amber)}
-.tree-icon.json{background:rgba(34,197,94,0.08);color:var(--green)}
-.tree-icon.img{background:rgba(244,114,182,0.08);color:var(--pink)}
-.tree-name{overflow:hidden;text-overflow:ellipsis}
-.tree-indent{width:14px;flex-shrink:0}
-
-/* Canvas */
-.canvas-area{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;position:relative;background:var(--bg);background-image:radial-gradient(ellipse at 50% 40%,rgba(34,197,94,0.02) 0%,transparent 60%)}
-
-/* Drop zone */
-.drop-zone{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:28px;z-index:10;transition:all .3s ease}
-.drop-zone.hidden{display:none}
-.drop-zone.dragging{background:var(--accent-subtle)}
-.drop-zone.dragging::after{content:'';position:absolute;inset:28px;border:2px dashed rgba(34,197,94,0.4);border-radius:20px;animation:glow-pulse 2s ease-in-out infinite}
-@keyframes glow-pulse{0%,100%{opacity:.3;box-shadow:inset 0 0 20px var(--accent-glow)}50%{opacity:1;box-shadow:inset 0 0 40px var(--accent-glow)}}
-.drop-visual{width:88px;height:88px;border-radius:24px;background:var(--bg-secondary);border:1px solid var(--border-hover);display:flex;align-items:center;justify-content:center;box-shadow:var(--shadow),0 0 0 1px rgba(255,255,255,0.02);transition:all .4s cubic-bezier(.4,0,.2,1)}
-.drop-visual svg{width:36px;height:36px;stroke:var(--text-secondary);fill:none;stroke-width:1.5;transition:all .3s ease}
-.drop-zone:not(.dragging):hover .drop-visual{transform:translateY(-4px);box-shadow:var(--shadow),0 0 30px var(--accent-glow);border-color:rgba(34,197,94,0.3)}
-.drop-zone:not(.dragging):hover .drop-visual svg{stroke:var(--accent)}
-.drop-text{text-align:center}
-.drop-text h2{font-size:18px;font-weight:600;margin-bottom:6px;letter-spacing:-0.4px}
-.drop-text p{font-size:13px;color:var(--text-muted);font-weight:400}
-.drop-hint{font-size:11px;color:var(--text-muted);opacity:.7;margin-top:-8px;letter-spacing:.2px}
-.float-browse{position:absolute;top:16px;right:16px;width:40px;height:40px;border-radius:10px;background:var(--bg-secondary);border:1px solid var(--border-hover);display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .2s ease;z-index:15;opacity:.6}
-.float-browse:hover{opacity:1;background:var(--accent);border-color:var(--accent);box-shadow:0 4px 16px var(--accent-glow)}
-.float-browse:hover svg{stroke:#fff}
-.float-browse svg{width:18px;height:18px;stroke:var(--text-secondary);fill:none;pointer-events:none}
-.float-browse .select-menu{top:calc(100% + 8px);right:0;left:auto;transform:none}
-.float-browse .select-menu.show{animation:menuFadeRight .15s ease}
-@keyframes menuFadeRight{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
-.drop-actions{position:relative;margin-top:12px}
-.select-btn{padding:10px 22px;border-radius:10px;border:1px solid var(--border-hover);background:var(--bg-secondary);color:var(--text);cursor:pointer;font-size:13px;font-weight:500;font-family:inherit;transition:all .25s ease;display:flex;align-items:center;gap:8px}
-.select-btn:hover{background:var(--accent);border-color:var(--accent);color:#fff;transform:translateY(-1px);box-shadow:0 6px 20px var(--accent-glow)}
-.select-btn svg{width:15px;height:15px}
-.select-menu{position:absolute;top:calc(100% + 10px);left:50%;transform:translateX(-50%);background:var(--bg-secondary);border:1px solid var(--border-hover);border-radius:12px;overflow:hidden;display:none;min-width:200px;box-shadow:var(--shadow);z-index:100}
-.select-menu.show{display:block;animation:menuFade .15s ease}
-@keyframes menuFade{from{opacity:0;transform:translateX(-50%) translateY(4px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
-.select-menu label{display:flex;align-items:center;gap:11px;padding:11px 16px;font-size:13px;cursor:pointer;transition:all .12s;color:var(--text-secondary);font-weight:400}
-.select-menu label:hover{background:var(--bg-tertiary);color:var(--text)}
-.select-menu label svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2}
-.select-menu input{display:none}
-
-/* Preview */
-.preview-container,.img-preview-container{position:absolute;inset:0;display:flex;align-items:center;justify-content:center}
-.preview-container.hidden,.img-preview-container.hidden{display:none}
-#lottie-player{width:80%;height:80%;max-width:560px;max-height:560px;border-radius:16px}
-.img-preview-container{flex-direction:column;gap:0;padding:28px}
-.img-preview-wrap{flex:1;display:flex;align-items:center;justify-content:center;width:100%;min-height:0;position:relative}
-.img-preview-wrap img{max-width:100%;max-height:100%;object-fit:contain;border-radius:12px;box-shadow:0 12px 48px rgba(0,0,0,0.4)}
-.img-info-panel{width:100%;max-width:640px;margin-top:20px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:12px;padding:14px 22px;display:flex;flex-wrap:wrap;gap:10px 30px}
-.img-info-item{display:flex;flex-direction:column;gap:3px}
-.img-info-item .label{font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.8px;font-weight:500}
-.img-info-item .value{font-size:14px;color:var(--text);font-weight:600}
-
-/* Controls */
-.controls{padding:10px 20px;background:var(--bg-secondary);border-top:1px solid var(--border);display:flex;align-items:center;gap:10px}
-.controls.hidden{display:none}
-.ctrl-btn{width:34px;height:34px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--text-secondary);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:14px;transition:all .15s ease}
-.ctrl-btn:hover{border-color:var(--accent);color:var(--accent);background:var(--accent-subtle)}
-.ctrl-btn.active{background:var(--accent);border-color:var(--accent);color:#fff;box-shadow:0 0 12px var(--accent-glow)}
-.progress-wrap{flex:1;display:flex;align-items:center;gap:12px}
-.progress-bar{flex:1;height:4px;background:var(--bg-tertiary);border-radius:100px;cursor:pointer;overflow:hidden;transition:height .15s}
-.progress-bar:hover{height:6px}
-.progress-fill{height:100%;background:var(--accent);border-radius:100px;width:0%;transition:width .05s linear;box-shadow:0 0 8px var(--accent-glow)}
-.progress-time{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--text-muted);min-width:56px;text-align:center;font-variant-numeric:tabular-nums}
-.speed-select{font-family:'JetBrains Mono',monospace;background:var(--bg);border:1px solid var(--border);color:var(--text-secondary);padding:5px 8px;border-radius:6px;font-size:11px;cursor:pointer}
-.bg-control{display:flex;gap:5px;margin-left:6px}
-.bg-dot{width:16px;height:16px;border-radius:50%;border:2px solid transparent;cursor:pointer;transition:all .2s ease;box-shadow:inset 0 0 0 1px rgba(255,255,255,0.08)}
-.bg-dot:hover{transform:scale(1.2)}
-.bg-dot.active{border-color:var(--accent);box-shadow:0 0 8px var(--accent-glow)}
-.bg-dot.white{background:#fafafa}
-.bg-dot.gray{background:#64748B}
-.bg-dot.dark{background:#0F172A}
-.bg-dot.checker{background:repeating-conic-gradient(#334155 0% 25%,#1E293B 0% 50%) 50%/8px 8px}
-
-/* Video */
-.video-preview-container{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:28px}
-.video-preview-container.hidden{display:none}
-#video-player{max-width:90%;max-height:70%;border-radius:12px;box-shadow:0 12px 48px rgba(0,0,0,0.4);background:#000}
-#video-player:not([src]){display:none}
-
-/* File preview */
-.file-preview-container{position:absolute;inset:0;display:flex;flex-direction:column;overflow:hidden}
-.file-preview-container.hidden{display:none}
-.file-preview-header{padding:12px 22px;background:var(--bg-secondary);border-bottom:1px solid var(--border);font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--text-secondary);display:flex;flex-wrap:wrap;gap:8px 24px;flex-shrink:0}
-.file-preview-header .fph-item{display:flex;gap:6px}
-.file-preview-header .fph-label{color:var(--text-muted)}
-.file-preview-header .fph-value{color:var(--text);font-weight:500}
-.file-content{flex:1;overflow:auto;padding:16px 0;font-family:'JetBrains Mono',monospace;font-size:13px;line-height:1.7;color:var(--text);white-space:pre;tab-size:2;counter-reset:line}
-.file-content::-webkit-scrollbar,.file-hex::-webkit-scrollbar{width:6px;height:6px}
-.file-content::-webkit-scrollbar-thumb,.file-hex::-webkit-scrollbar-thumb{background:var(--bg-tertiary);border-radius:3px}
-.file-content .line{counter-increment:line;display:block;padding:0 20px 0 64px;position:relative;min-width:max-content}
-.file-content .line::before{content:counter(line);position:absolute;left:0;width:44px;text-align:right;color:var(--text-muted);font-size:11px;user-select:none;-webkit-user-select:none}
-.file-content .line:hover{background:var(--bg-secondary)}
-.file-content .line.hl{background:var(--accent-subtle)}
-.file-hex{flex:1;overflow:auto;padding:16px 20px;font-family:'JetBrains Mono',monospace;font-size:13px;line-height:1.7;color:var(--text)}
-.file-hex .hex-line{display:block}
-.file-hex .hex-offset{color:var(--accent);margin-right:16px}
-.file-hex .hex-bytes{color:var(--text)}
-.file-hex .hex-ascii{color:var(--text-muted);margin-left:16px}
-
-/* Document (PDF/EPUB) */
-.doc-preview-container{position:absolute;inset:0;display:flex;flex-direction:column;overflow:hidden}
-.doc-preview-container.hidden{display:none}
-#doc-iframe{flex:1;width:100%;border:none;background:#fff}
-#doc-embed{flex:1;width:100%;border:none;display:none;min-height:0}
-</style>
 </head>
 <body>
 
@@ -171,14 +19,14 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--t
     <h1>Preview Tool</h1>
   </div>
   <div class="tab-bar">
-    <button class="tab-btn active" onclick="switchMode('lottie')">Lottie</button>
-    <button class="tab-btn" onclick="switchMode('image')">Image</button>
-    <button class="tab-btn" onclick="switchMode('video')">Video</button>
-    <button class="tab-btn" onclick="switchMode('file')">File</button>
+    <button class="tab-btn active">Lottie</button>
+    <button class="tab-btn">Image</button>
+    <button class="tab-btn">Video</button>
+    <button class="tab-btn">File</button>
   </div>
   <div class="header-meta">
     <div class="info-pill" id="info-badge"></div>
-    <button class="btn-reset" onclick="resetAll()" title="Clear all and start over">Reset</button>
+    <button class="btn-reset" title="Clear all and start over">Reset</button>
   </div>
 </div>
 
@@ -198,14 +46,14 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--t
       </div>
       <div class="drop-hint">Drag files here or click Browse · Supports JSON with external images folder</div>
       <div class="drop-actions">
-        <button class="select-btn" onclick="toggleMenu('lottie')">
+        <button class="select-btn">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
           Browse Files
         </button>
         <div class="select-menu" id="menu-lottie">
-          <label onclick="closeMenu()"><svg viewBox="0 0 24 24"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg> Folder<input type="file" id="lottie-folder" webkitdirectory multiple></label>
-          <label onclick="closeMenu()"><svg viewBox="0 0 24 24"><path d="M21 8v13H3V8"/><path d="M1 3h22v5H1z"/><path d="M10 12h4"/></svg> ZIP<input type="file" id="lottie-zip" accept=".zip"></label>
-          <label onclick="closeMenu()"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg> JSON<input type="file" id="lottie-json" accept=".json" multiple></label>
+          <label><svg viewBox="0 0 24 24"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg> Folder<input type="file" id="lottie-folder" webkitdirectory multiple></label>
+          <label><svg viewBox="0 0 24 24"><path d="M21 8v13H3V8"/><path d="M1 3h22v5H1z"/><path d="M10 12h4"/></svg> ZIP<input type="file" id="lottie-zip" accept=".zip"></label>
+          <label><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg> JSON<input type="file" id="lottie-json" accept=".json" multiple></label>
         </div>
       </div>
     </div>
@@ -218,37 +66,37 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--t
       </div>
       <div class="drop-hint">Drag files here or click Browse · Shows format, frames, duration & FPS</div>
       <div class="drop-actions">
-        <button class="select-btn" onclick="toggleMenu('image')">
+        <button class="select-btn">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
           Browse Files
         </button>
         <div class="select-menu" id="menu-image">
-          <label onclick="closeMenu()"><svg viewBox="0 0 24 24"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg> Folder<input type="file" id="img-folder" webkitdirectory multiple></label>
-          <label onclick="closeMenu()"><svg viewBox="0 0 24 24"><path d="M21 8v13H3V8"/><path d="M1 3h22v5H1z"/><path d="M10 12h4"/></svg> ZIP<input type="file" id="img-zip" accept=".zip"></label>
-          <label onclick="closeMenu()"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg> Image<input type="file" id="img-file" accept=".webp,.apng,.png,.gif,.jpg,.jpeg,.pag,.heic,.heif,.avif,.tiff,.tif" multiple></label>
+          <label><svg viewBox="0 0 24 24"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg> Folder<input type="file" id="img-folder" webkitdirectory multiple></label>
+          <label><svg viewBox="0 0 24 24"><path d="M21 8v13H3V8"/><path d="M1 3h22v5H1z"/><path d="M10 12h4"/></svg> ZIP<input type="file" id="img-zip" accept=".zip"></label>
+          <label><svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg> Image<input type="file" id="img-file" accept=".webp,.apng,.png,.gif,.jpg,.jpeg,.pag,.heic,.heif,.avif,.tiff,.tif" multiple></label>
         </div>
       </div>
     </div>
 
     <div class="preview-container hidden" id="preview-lottie">
       <div id="lottie-player"></div>
-      <div class="float-browse" onclick="toggleMenu('lottie-float')" title="Load new files">
+      <div class="float-browse" title="Load new files">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
         <div class="select-menu" id="menu-lottie-float">
-          <label onclick="closeMenu()"><svg viewBox="0 0 24 24"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg> Folder<input type="file" id="lottie-folder2" webkitdirectory multiple></label>
-          <label onclick="closeMenu()"><svg viewBox="0 0 24 24"><path d="M21 8v13H3V8"/><path d="M1 3h22v5H1z"/><path d="M10 12h4"/></svg> ZIP<input type="file" id="lottie-zip2" accept=".zip"></label>
-          <label onclick="closeMenu()"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg> JSON<input type="file" id="lottie-json2" accept=".json" multiple></label>
+          <label><svg viewBox="0 0 24 24"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg> Folder<input type="file" id="lottie-folder2" webkitdirectory multiple></label>
+          <label><svg viewBox="0 0 24 24"><path d="M21 8v13H3V8"/><path d="M1 3h22v5H1z"/><path d="M10 12h4"/></svg> ZIP<input type="file" id="lottie-zip2" accept=".zip"></label>
+          <label><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg> JSON<input type="file" id="lottie-json2" accept=".json" multiple></label>
         </div>
       </div>
     </div>
     <div class="img-preview-container hidden" id="preview-image">
       <div class="img-preview-wrap"><img id="img-preview-el" src="" alt=""></div>
-      <div class="float-browse" onclick="toggleMenu('image-float')" title="Load new files">
+      <div class="float-browse" title="Load new files">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
         <div class="select-menu" id="menu-image-float">
-          <label onclick="closeMenu()"><svg viewBox="0 0 24 24"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg> Folder<input type="file" id="img-folder2" webkitdirectory multiple></label>
-          <label onclick="closeMenu()"><svg viewBox="0 0 24 24"><path d="M21 8v13H3V8"/><path d="M1 3h22v5H1z"/><path d="M10 12h4"/></svg> ZIP<input type="file" id="img-zip2" accept=".zip"></label>
-          <label onclick="closeMenu()"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg> Image<input type="file" id="img-file2" accept=".webp,.apng,.png,.gif,.jpg,.jpeg,.pag,.heic,.heif,.avif,.tiff,.tif" multiple></label>
+          <label><svg viewBox="0 0 24 24"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg> Folder<input type="file" id="img-folder2" webkitdirectory multiple></label>
+          <label><svg viewBox="0 0 24 24"><path d="M21 8v13H3V8"/><path d="M1 3h22v5H1z"/><path d="M10 12h4"/></svg> ZIP<input type="file" id="img-zip2" accept=".zip"></label>
+          <label><svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg> Image<input type="file" id="img-file2" accept=".webp,.apng,.png,.gif,.jpg,.jpeg,.pag,.heic,.heif,.avif,.tiff,.tif" multiple></label>
         </div>
       </div>
       <div class="img-info-panel" id="img-info-panel"></div>
@@ -262,14 +110,14 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--t
       </div>
       <div class="drop-hint">Drag files here or click Browse · Supports folder & ZIP</div>
       <div class="drop-actions">
-        <button class="select-btn" onclick="toggleMenu('video')">
+        <button class="select-btn">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
           Browse Files
         </button>
         <div class="select-menu" id="menu-video">
-          <label onclick="closeMenu()"><svg viewBox="0 0 24 24"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg> Folder<input type="file" id="video-folder" webkitdirectory multiple></label>
-          <label onclick="closeMenu()"><svg viewBox="0 0 24 24"><path d="M21 8v13H3V8"/><path d="M1 3h22v5H1z"/><path d="M10 12h4"/></svg> ZIP<input type="file" id="video-zip" accept=".zip"></label>
-          <label onclick="closeMenu()"><svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg> Video<input type="file" id="video-file" accept=".mp4,.webm,.mov,.mkv,.ogg" multiple></label>
+          <label><svg viewBox="0 0 24 24"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg> Folder<input type="file" id="video-folder" webkitdirectory multiple></label>
+          <label><svg viewBox="0 0 24 24"><path d="M21 8v13H3V8"/><path d="M1 3h22v5H1z"/><path d="M10 12h4"/></svg> ZIP<input type="file" id="video-zip" accept=".zip"></label>
+          <label><svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg> Video<input type="file" id="video-file" accept=".mp4,.webm,.mov,.mkv,.ogg" multiple></label>
         </div>
       </div>
     </div>
@@ -282,14 +130,14 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--t
       </div>
       <div class="drop-hint">Drag files here or click Browse · Text with line numbers · JSON auto-format · Binary hex dump</div>
       <div class="drop-actions">
-        <button class="select-btn" onclick="toggleMenu('file')">
+        <button class="select-btn">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
           Browse Files
         </button>
         <div class="select-menu" id="menu-file">
-          <label onclick="closeMenu()"><svg viewBox="0 0 24 24"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg> Folder<input type="file" id="file-folder" webkitdirectory multiple></label>
-          <label onclick="closeMenu()"><svg viewBox="0 0 24 24"><path d="M21 8v13H3V8"/><path d="M1 3h22v5H1z"/><path d="M10 12h4"/></svg> ZIP<input type="file" id="file-zip" accept=".zip"></label>
-          <label onclick="closeMenu()"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg> File<input type="file" id="file-any" accept="*/*" multiple></label>
+          <label><svg viewBox="0 0 24 24"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg> Folder<input type="file" id="file-folder" webkitdirectory multiple></label>
+          <label><svg viewBox="0 0 24 24"><path d="M21 8v13H3V8"/><path d="M1 3h22v5H1z"/><path d="M10 12h4"/></svg> ZIP<input type="file" id="file-zip" accept=".zip"></label>
+          <label><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg> File<input type="file" id="file-any" accept="*/*" multiple></label>
         </div>
       </div>
     </div>
@@ -312,16 +160,16 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--t
 </div>
 
 <div class="controls hidden" id="controls">
-  <button class="ctrl-btn" id="btn-play" onclick="togglePlay()" title="Play / Pause">&#9654;</button>
-  <button class="ctrl-btn" id="btn-stop" onclick="stopAnim()" title="Stop">&#9632;</button>
+  <button class="ctrl-btn" id="btn-play" title="Play / Pause">&#9654;</button>
+  <button class="ctrl-btn" id="btn-stop" title="Stop">&#9632;</button>
   <div class="progress-wrap">
-    <div class="progress-bar" id="progress-bar" onclick="seekAnim(event)">
+    <div class="progress-bar" id="progress-bar">
       <div class="progress-fill" id="progress-fill"></div>
     </div>
     <div class="progress-time" id="progress-time">0 / 0</div>
   </div>
-  <button class="ctrl-btn" id="btn-loop" onclick="toggleLoop()" title="Toggle loop">&#10227;</button>
-  <select class="speed-select" onchange="changeSpeed(this.value)">
+  <button class="ctrl-btn" id="btn-loop" title="Toggle loop">&#10227;</button>
+  <select class="speed-select">
     <option value="0.25">0.25x</option>
     <option value="0.5">0.5x</option>
     <option value="1" selected>1x</option>
@@ -330,752 +178,13 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--t
     <option value="3">3x</option>
   </select>
   <div class="bg-control">
-    <div class="bg-dot dark active" onclick="setBg('#0F172A', this)" title="Dark background"></div>
-    <div class="bg-dot white" onclick="setBg('#F8FAFC', this)" title="Light background"></div>
-    <div class="bg-dot gray" onclick="setBg('#64748B', this)" title="Gray background"></div>
-    <div class="bg-dot checker" onclick="setBg('checker', this)" title="Checkerboard"></div>
+    <div class="bg-dot dark active" title="Dark background"></div>
+    <div class="bg-dot white" title="Light background"></div>
+    <div class="bg-dot gray" title="Gray background"></div>
+    <div class="bg-dot checker" title="Checkerboard"></div>
   </div>
 </div>
 
-<script>
-var HIDDEN_FILES = ['.DS_Store', 'Thumbs.db', '.gitkeep', '__MACOSX'];
-var IMG_EXTS = ['.png', '.jpg', '.jpeg', '.webp', '.gif', '.apng', '.pag', '.svg', '.heic', '.heif', '.avif', '.tiff', '.tif'];
-var VIDEO_EXTS = ['.mp4', '.webm', '.mov', '.mkv', '.ogg', '.avi'];
-
-var currentMode = 'lottie';
-var anim = null, isPlaying = false, isLooping = true;
-var fileMap = new Map(), animGroups = [], progressRAF = null;
-
-var modeState = {
-  lottie: { fileMap: new Map(), animGroups: [], hasContent: false, activeFile: null },
-  image: { fileMap: new Map(), hasContent: false, activeFile: null },
-  video: { fileMap: new Map(), hasContent: false, activeFile: null },
-  file: { fileMap: new Map(), hasContent: false, activeFile: null }
-};
-
-var dropZoneLottie = document.getElementById('drop-zone-lottie');
-var dropZoneImage = document.getElementById('drop-zone-image');
-var previewLottie = document.getElementById('preview-lottie');
-var previewImage = document.getElementById('preview-image');
-var controls = document.getElementById('controls');
-var fileTree = document.getElementById('file-tree');
-var lottiePlayer = document.getElementById('lottie-player');
-var progressFill = document.getElementById('progress-fill');
-var progressTime = document.getElementById('progress-time');
-var infoBadge = document.getElementById('info-badge');
-var imgPreviewEl = document.getElementById('img-preview-el');
-var imgInfoPanel = document.getElementById('img-info-panel');
-var dropZoneVideo = document.getElementById('drop-zone-video');
-var dropZoneFile = document.getElementById('drop-zone-file');
-var previewVideo = document.getElementById('preview-video');
-var previewFile = document.getElementById('preview-file');
-var videoPlayer = document.getElementById('video-player');
-var videoInfoPanel = document.getElementById('video-info-panel');
-var filePreviewHeader = document.getElementById('file-preview-header');
-var fileContent = document.getElementById('file-content');
-var fileHex = document.getElementById('file-hex');
-var previewDoc = document.getElementById('preview-doc');
-var docIframe = document.getElementById('doc-iframe');
-var docEmbed = document.getElementById('doc-embed');
-var docInfoHeader = document.getElementById('doc-info-header');
-
-var TAB_MODES = ['lottie', 'image', 'video', 'file'];
-function switchMode(mode) {
-  saveCurrentState();
-  currentMode = mode;
-  document.querySelectorAll('.tab-btn').forEach(function(btn, i) {
-    btn.classList.toggle('active', TAB_MODES[i] === mode);
-  });
-  restoreModeState(mode);
-}
-
-function saveCurrentState() {
-  var state = modeState[currentMode];
-  state.fileMap = new Map(fileMap);
-  if (currentMode === 'lottie') state.animGroups = animGroups.slice();
-}
-
-function restoreModeState(mode) {
-  var state = modeState[mode];
-  fileMap = new Map(state.fileMap);
-  if (mode === 'lottie') animGroups = state.animGroups.slice();
-  dropZoneLottie.classList.add('hidden');
-  dropZoneImage.classList.add('hidden');
-  dropZoneVideo.classList.add('hidden');
-  dropZoneFile.classList.add('hidden');
-  previewLottie.classList.add('hidden');
-  previewImage.classList.add('hidden');
-  previewVideo.classList.add('hidden');
-  previewFile.classList.add('hidden');
-  previewDoc.classList.add('hidden');
-  controls.classList.add('hidden');
-  infoBadge.style.display = 'none';
-  if (state.hasContent) {
-    buildTree();
-    if (mode === 'lottie' && state.activeFile) playJson(state.activeFile);
-    else if (mode === 'image' && state.activeFile) showImagePreview(state.activeFile);
-    else if (mode === 'video' && state.activeFile) showVideoPreview(state.activeFile);
-    else if (mode === 'file' && state.activeFile) showFilePreview(state.activeFile);
-  } else {
-    fileTree.innerHTML = '';
-    if (mode === 'lottie') dropZoneLottie.classList.remove('hidden');
-    else if (mode === 'image') dropZoneImage.classList.remove('hidden');
-    else if (mode === 'video') dropZoneVideo.classList.remove('hidden');
-    else dropZoneFile.classList.remove('hidden');
-  }
-}
-
-document.body.addEventListener('dragover', function(e) { e.preventDefault(); e.stopPropagation(); getActiveDropZone().classList.add('dragging'); });
-document.body.addEventListener('dragleave', function(e) { if (!e.relatedTarget || !document.body.contains(e.relatedTarget)) getActiveDropZone().classList.remove('dragging'); });
-document.body.addEventListener('drop', async function(e) {
-  e.preventDefault(); e.stopPropagation();
-  getActiveDropZone().classList.remove('dragging');
-  try {
-    var items = e.dataTransfer.items;
-    if (items && items.length > 0) {
-      var entries = [];
-      for (var i = 0; i < items.length; i++) {
-        var entry = items[i].webkitGetAsEntry ? items[i].webkitGetAsEntry() : (items[i].getAsEntry ? items[i].getAsEntry() : null);
-        if (entry) entries.push(entry);
-      }
-      if (entries.length > 0) { await processEntries(entries); return; }
-    }
-    if (e.dataTransfer.files.length > 0) await processFiles(e.dataTransfer.files);
-  } catch(err) { console.error('Drop error:', err); }
-});
-
-function getActiveDropZone() {
-  if (currentMode === 'lottie') return dropZoneLottie;
-  if (currentMode === 'image') return dropZoneImage;
-  if (currentMode === 'video') return dropZoneVideo;
-  return dropZoneFile;
-}
-
-['lottie-folder','lottie-zip','lottie-json','lottie-folder2','lottie-zip2','lottie-json2'].forEach(function(id) {
-  document.getElementById(id).addEventListener('change', function(e) { if (e.target.files.length > 0) processFiles(e.target.files); });
-});
-['img-folder','img-zip','img-file','img-folder2','img-zip2','img-file2'].forEach(function(id) {
-  document.getElementById(id).addEventListener('change', function(e) { if (e.target.files.length > 0) processFiles(e.target.files); });
-});
-['video-folder','video-zip','video-file'].forEach(function(id) {
-  document.getElementById(id).addEventListener('change', function(e) { if (e.target.files.length > 0) processFiles(e.target.files); });
-});
-['file-folder','file-zip','file-any'].forEach(function(id) {
-  document.getElementById(id).addEventListener('change', function(e) { if (e.target.files.length > 0) processFiles(e.target.files); });
-});
-
-function toggleMenu(type) { document.getElementById('menu-' + type).classList.toggle('show'); }
-function closeMenu() { setTimeout(function() { document.querySelectorAll('.select-menu').forEach(function(m) { m.classList.remove('show'); }); }, 100); }
-document.addEventListener('click', function(e) { if (!e.target.closest('.drop-actions') && !e.target.closest('.float-browse')) closeMenu(); });
-
-function isHiddenFile(name) { if (name.startsWith('.')) return true; return HIDDEN_FILES.some(function(h) { return name === h || name.startsWith(h); }); }
-function isImageFile(name) { var lower = name.toLowerCase(); return IMG_EXTS.some(function(ext) { return lower.endsWith(ext); }); }
-function isVideoFile(name) { var lower = name.toLowerCase(); return VIDEO_EXTS.some(function(ext) { return lower.endsWith(ext); }); }
-
-async function processEntries(entries) {
-  fileMap.clear();
-  for (var i = 0; i < entries.length; i++) await readEntry(entries[i], '');
-  var paths = Array.from(fileMap.keys());
-  if (paths.length === 1 && paths[0].endsWith('.zip')) { await processZip(fileMap.get(paths[0])); fileMap.delete(paths[0]); }
-  buildTree(); autoStart();
-}
-
-async function readEntry(entry, basePath) {
-  if (isHiddenFile(entry.name)) return;
-  var path = basePath ? basePath + '/' + entry.name : entry.name;
-  if (entry.isFile) {
-    var file = await new Promise(function(r, j) { entry.file(r, j); }).catch(function() { return null; });
-    if (file) fileMap.set(path, file);
-  } else if (entry.isDirectory) {
-    var reader = entry.createReader(), allEntries = [], keepReading = true;
-    while (keepReading) {
-      var batch = await new Promise(function(r, j) { reader.readEntries(r, j); }).catch(function() { return []; });
-      if (batch.length > 0) allEntries = allEntries.concat(Array.from(batch)); else keepReading = false;
-    }
-    for (var i = 0; i < allEntries.length; i++) await readEntry(allEntries[i], path);
-  }
-}
-
-async function processFiles(files) {
-  fileMap.clear();
-  if (files.length === 1 && files[0].name.endsWith('.zip')) { await processZip(files[0]); }
-  else { for (var i = 0; i < files.length; i++) { if (isHiddenFile(files[i].name)) continue; fileMap.set(files[i].webkitRelativePath || files[i].name, files[i]); } }
-  buildTree(); autoStart();
-}
-
-async function processZip(zipFile) {
-  fileMap.clear();
-  var zip = await JSZip.loadAsync(zipFile);
-  for (var p of Object.keys(zip.files)) {
-    var ze = zip.files[p]; if (ze.dir) continue;
-    var name = p.split('/').pop();
-    if (isHiddenFile(name) || p.indexOf('__MACOSX') >= 0) continue;
-    var blob = await ze.async('blob');
-    fileMap.set(p, new File([blob], name, { type: guessType(name) }));
-  }
-}
-
-function guessType(name) {
-  var n = name.toLowerCase();
-  if (n.endsWith('.json')) return 'application/json';
-  if (n.endsWith('.png') || n.endsWith('.apng')) return 'image/png';
-  if (n.endsWith('.jpg') || n.endsWith('.jpeg')) return 'image/jpeg';
-  if (n.endsWith('.webp')) return 'image/webp';
-  if (n.endsWith('.gif')) return 'image/gif';
-  if (n.endsWith('.svg')) return 'image/svg+xml';
-  return 'application/octet-stream';
-}
-
-function buildTree() {
-  var paths = Array.from(fileMap.keys()).sort();
-  var tree = {};
-  paths.forEach(function(p) { var parts = p.split('/'), node = tree; parts.forEach(function(part, i) { if (i === parts.length - 1) node[part] = null; else { if (!node[part]) node[part] = {}; node = node[part]; } }); });
-  fileTree.innerHTML = '';
-  renderTreeNode(tree, 0, '');
-  findAnimGroups();
-}
-
-function renderTreeNode(node, depth, prefix) {
-  Object.keys(node).sort(function(a, b) { var ad = node[a] !== null, bd = node[b] !== null; if (ad && !bd) return -1; if (!ad && bd) return 1; return a.localeCompare(b); }).forEach(function(key) {
-    var fullPath = prefix ? prefix + '/' + key : key;
-    var isDir = node[key] !== null, isJson = key.endsWith('.json'), isImg = isImageFile(key), isVid = isVideoFile(key);
-    var div = document.createElement('div');
-    div.className = 'tree-item';
-    var indent = ''; for (var i = 0; i < depth; i++) indent += '<span class="tree-indent"></span>';
-    var iconClass = isDir ? 'folder' : (isJson ? 'json' : (isImg ? 'img' : (isVid ? 'folder' : 'json')));
-    var iconText = isDir ? '&#128193;' : (isJson ? '{ }' : (isImg ? '&#9632;' : (isVid ? '&#9654;' : '&#128196;')));
-    if (!isDir) { div.style.color = isVid ? 'var(--pink)' : (!isJson && !isImg ? 'var(--amber)' : ''); }
-    div.innerHTML = indent + '<span class="tree-icon ' + iconClass + '">' + iconText + '</span><span class="tree-name">' + key + '</span>';
-    div.title = fullPath;
-    if (!isDir && isJson) { div.onclick = currentMode === 'lottie' ? (function(fp) { return function() { playJson(fp); }; })(fullPath) : (function(fp) { return function() { showFilePreview(fp); }; })(fullPath); }
-    else if (!isDir && isImg) div.onclick = (function(fp) { return function() { showImagePreview(fp); }; })(fullPath);
-    else if (!isDir && isVid) div.onclick = (function(fp) { return function() { showVideoPreview(fp); }; })(fullPath);
-    else if (!isDir && !isJson) div.onclick = (function(fp) { return function() { showFilePreview(fp); }; })(fullPath);
-    fileTree.appendChild(div);
-    if (isDir) renderTreeNode(node[key], depth + 1, fullPath);
-  });
-}
-
-function findAnimGroups() {
-  animGroups = [];
-  var allPaths = Array.from(fileMap.keys());
-  allPaths.filter(function(p) { return p.endsWith('.json'); }).forEach(function(jsonPath) {
-    var dir = jsonPath.substring(0, jsonPath.lastIndexOf('/'));
-    var imagesDir = dir ? dir + '/images' : 'images';
-    var images = new Map();
-    fileMap.forEach(function(file, path) { if (path.startsWith(imagesDir + '/')) images.set(path.split('/').pop(), file); });
-    animGroups.push({ jsonPath: jsonPath, images: images });
-  });
-}
-
-function autoStart() {
-  modeState[currentMode].fileMap = new Map(fileMap);
-  modeState[currentMode].hasContent = true;
-  if (currentMode === 'lottie') { modeState[currentMode].animGroups = animGroups.slice(); if (animGroups.length > 0) playJson(animGroups[0].jsonPath); }
-  else if (currentMode === 'image') { var firstImg = Array.from(fileMap.keys()).find(function(p) { return isImageFile(p); }); if (firstImg) showImagePreview(firstImg); }
-  else if (currentMode === 'video') { var firstVid = Array.from(fileMap.keys()).find(function(p) { return isVideoFile(p); }); if (firstVid) showVideoPreview(firstVid); }
-  else { var firstFile = Array.from(fileMap.keys()).find(function(p) { return true; }); if (firstFile) showFilePreview(firstFile); }
-}
-
-async function playJson(jsonPath) {
-  modeState['lottie'].activeFile = jsonPath;
-  document.querySelectorAll('.tree-item').forEach(function(el) { el.classList.toggle('active', el.title === jsonPath); });
-  var file = fileMap.get(jsonPath); if (!file) return;
-  var animData; try { animData = JSON.parse(await file.text()); } catch (e) { alert('JSON error: ' + e.message); return; }
-  var group = animGroups.find(function(g) { return g.jsonPath === jsonPath; });
-  if (group && group.images.size > 0) await injectExternalImages(animData, group.images);
-  if (anim) { anim.destroy(); anim = null; }
-  cancelAnimationFrame(progressRAF); lottiePlayer.innerHTML = '';
-  hideAllPreviews(); previewLottie.classList.remove('hidden'); controls.classList.remove('hidden');
-  anim = lottie.loadAnimation({ container: lottiePlayer, renderer: 'svg', loop: isLooping, autoplay: true, animationData: animData });
-  isPlaying = true; document.getElementById('btn-play').innerHTML = '&#9208;';
-  document.getElementById('btn-loop').classList.toggle('active', isLooping);
-  var fps = animData.fr || 30;
-  infoBadge.style.display = '';
-  infoBadge.textContent = Math.round(anim.totalFrames) + ' frames  ·  ' + fps + ' fps  ·  ' + (anim.totalFrames / fps).toFixed(1) + 's';
-  updateProgress();
-}
-
-async function injectExternalImages(animData, imagesMap) {
-  if (!animData.assets) return;
-  for (var i = 0; i < animData.assets.length; i++) { var asset = animData.assets[i]; if (!asset.p) continue; var imgFile = imagesMap.get(asset.p); if (imgFile) { asset.p = await fileToDataUrl(imgFile); asset.u = ''; asset.e = 1; } }
-}
-function fileToDataUrl(file) { return new Promise(function(r) { var rd = new FileReader(); rd.onload = function() { r(rd.result); }; rd.readAsDataURL(file); }); }
-
-async function showImagePreview(filePath) {
-  modeState[currentMode].activeFile = filePath;
-  document.querySelectorAll('.tree-item').forEach(function(el) { el.classList.toggle('active', el.title === filePath); });
-  var file = fileMap.get(filePath); if (!file) return;
-  hideAllPreviews(); previewImage.classList.remove('hidden'); controls.classList.add('hidden');
-  var lower = filePath.toLowerCase();
-  if (lower.endsWith('.heic') || lower.endsWith('.heif')) {
-    try { var blob = await heic2any({ blob: file, toType: 'image/jpeg', quality: 0.92 }); imgPreviewEl.src = URL.createObjectURL(blob); }
-    catch(e) { imgPreviewEl.src = ''; }
-  } else { imgPreviewEl.src = URL.createObjectURL(file); }
-  var info = await analyzeImage(file);
-  infoBadge.style.display = '';
-  infoBadge.textContent = info.format + (info.animated ? ' (Animated)' : '') + '  ·  ' + info.width + 'x' + info.height;
-  var html = '';
-  html += infoItem('Format', info.format);
-  html += infoItem('Dimensions', info.width + ' × ' + info.height + ' px');
-  if (info.aspectRatio) html += infoItem('Aspect Ratio', info.aspectRatio);
-  if (info.megapixels > 0) html += infoItem('Megapixels', info.megapixels.toFixed(2) + ' MP');
-  html += infoItem('File Size', formatSize(file.size));
-  if (info.compression) html += infoItem('Compression', info.compression);
-  if (info.colorType) html += infoItem('Color Type', info.colorType);
-  if (info.bitDepth > 0) html += infoItem('Bit Depth', info.bitDepth + '-bit');
-  if (info.hasAlpha) html += infoItem('Alpha', 'Yes');
-  if (info.gifVersion) html += infoItem('GIF Version', info.gifVersion);
-  if (info.animated) { html += infoItem('Animated', 'Yes'); if (info.frames > 0) html += infoItem('Frames', info.frames); if (info.duration > 0) html += infoItem('Duration', info.duration.toFixed(2) + 's'); if (info.frames > 0 && info.duration > 0) html += infoItem('FPS', (info.frames / info.duration).toFixed(1)); if (info.loopCount >= 0) html += infoItem('Loop Count', info.loopCount === 0 ? '∞ (Infinite)' : info.loopCount); }
-  if (info.camera) html += infoItem('Camera', info.camera);
-  if (info.dateTime) html += infoItem('Date Taken', info.dateTime);
-  if (info.gps) {
-    var amapUrl = 'https://uri.amap.com/marker?position=' + info.gps.lng + ',' + info.gps.lat + '&name=' + encodeURIComponent('拍摄位置');
-    html += infoItem('Location', '<span id="gps-location-text">' + info.gps.lat.toFixed(6) + ', ' + info.gps.lng.toFixed(6) + '</span> <a href="' + amapUrl + '" target="_blank" style="color:var(--accent);text-decoration:none;margin-left:6px">高德地图 ↗</a>');
-    reverseGeocode(info.gps.lat, info.gps.lng);
-  }
-  imgInfoPanel.innerHTML = html;
-}
-
-function reverseGeocode(lat, lng) {
-  fetch('https://nominatim.openstreetmap.org/reverse?format=json&lat=' + lat + '&lon=' + lng + '&zoom=16&accept-language=zh')
-    .then(function(r) { return r.json(); })
-    .then(function(d) {
-      var el = document.getElementById('gps-location-text');
-      if (el && d.display_name) { el.textContent = d.display_name; }
-    }).catch(function() {});
-}
-
-function infoItem(label, value) { return '<div class="img-info-item"><span class="label">' + label + '</span><span class="value">' + value + '</span></div>'; }
-function formatSize(bytes) { if (bytes < 1024) return bytes + ' B'; if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' KB'; return (bytes / 1048576).toFixed(2) + ' MB'; }
-function gcd(a, b) { return b === 0 ? a : gcd(b, a % b); }
-function formatAspectRatio(w, h) { if (!w || !h) return ''; var g = gcd(w, h); var rw = w / g, rh = h / g; if (rw > 100 || rh > 100) return (w / h).toFixed(2) + ':1'; return rw + ':' + rh; }
-
-async function analyzeImage(file) {
-  var info = { format: 'Unknown', width: 0, height: 0, animated: false, frames: 0, duration: 0,
-    aspectRatio: '', megapixels: 0, compression: '', hasAlpha: false, colorType: '', bitDepth: 0, loopCount: -1, gifVersion: '',
-    gps: null, camera: '', dateTime: '' };
-  var name = file.name.toLowerCase(); var buffer = await file.arrayBuffer(); var bytes = new Uint8Array(buffer);
-  if (name.endsWith('.gif') || (bytes[0] === 0x47 && bytes[1] === 0x49 && bytes[2] === 0x46)) { info.format = 'GIF'; parseGIF(bytes, info); }
-  else if (name.endsWith('.webp') || (bytes[8] === 0x57 && bytes[9] === 0x45 && bytes[10] === 0x42 && bytes[11] === 0x50)) { info.format = 'WebP'; parseWebP(bytes, info); }
-  else if (name.endsWith('.png') || name.endsWith('.apng') || (bytes[0] === 0x89 && bytes[1] === 0x50)) { info.format = 'PNG'; parsePNG(bytes, info); }
-  else if (name.endsWith('.jpg') || name.endsWith('.jpeg')) { info.format = 'JPEG'; parseEXIF(bytes, info); await getDimensions(file, info); }
-  else if (name.endsWith('.tiff') || name.endsWith('.tif') || (bytes[0] === 0x49 && bytes[1] === 0x49 && bytes[2] === 0x2A && bytes[3] === 0x00) || (bytes[0] === 0x4D && bytes[1] === 0x4D && bytes[2] === 0x00 && bytes[3] === 0x2A)) { info.format = 'TIFF'; parseExifData(bytes, info); await getDimensions(file, info); }
-  else if (name.endsWith('.heic') || name.endsWith('.heif') || name.endsWith('.avif')) { info.format = name.endsWith('.avif') ? 'AVIF' : 'HEIC'; parseHEIF(bytes, info); }
-  else if (name.endsWith('.pag')) { info.format = 'PAG'; parsePAG(bytes, info); }
-  if (info.width === 0) await getDimensions(file, info);
-  if (info.width && info.height) { info.aspectRatio = formatAspectRatio(info.width, info.height); info.megapixels = parseFloat((info.width * info.height / 1000000).toFixed(2)); }
-  return info;
-}
-function getDimensions(file, info) { return new Promise(function(resolve) { var img = new Image(); img.onload = function() { info.width = img.naturalWidth; info.height = img.naturalHeight; resolve(); }; img.onerror = function() { resolve(); }; img.src = URL.createObjectURL(file); }); }
-
-function parseEXIF(bytes, info) {
-  if (bytes[0] !== 0xFF || bytes[1] !== 0xD8) return;
-  var offset = 2;
-  while (offset < bytes.length - 4) {
-    if (bytes[offset] !== 0xFF) break;
-    var marker = bytes[offset + 1];
-    if (marker === 0xE1) {
-      var len = (bytes[offset + 2] << 8) | bytes[offset + 3];
-      var exifData = bytes.slice(offset + 4, offset + 2 + len);
-      if (String.fromCharCode(exifData[0], exifData[1], exifData[2], exifData[3]) === 'Exif') {
-        parseExifData(exifData.slice(6), info);
-      }
-      return;
-    }
-    var segLen = (bytes[offset + 2] << 8) | bytes[offset + 3];
-    offset += 2 + segLen;
-  }
-}
-
-function parseExifData(data, info) {
-  var le = data[0] === 0x49;
-  function read16(off) { return le ? (data[off] | (data[off+1]<<8)) : ((data[off]<<8) | data[off+1]); }
-  function read32(off) { return le ? (data[off] | (data[off+1]<<8) | (data[off+2]<<16) | (data[off+3]<<24)) : ((data[off]<<24) | (data[off+1]<<16) | (data[off+2]<<8) | data[off+3]); }
-  function readRational(off) { var n = read32(off), d = read32(off+4); return d ? n/d : 0; }
-  function readString(off, len) { var s = ''; for (var i = 0; i < len && data[off+i] !== 0; i++) s += String.fromCharCode(data[off+i]); return s.trim(); }
-
-  if (read16(2) !== 0x002A) return;
-  var ifdOffset = read32(4);
-  var gpsIfdOffset = 0, exifIfdOffset = 0;
-
-  function parseIFD(off) {
-    if (off + 2 > data.length) return;
-    var count = read16(off); off += 2;
-    for (var i = 0; i < count && off + 12 <= data.length; i++) {
-      var tag = read16(off), type = read16(off+2), cnt = read32(off+4), valOff = off + 8;
-      if (cnt * [0,1,1,2,4,8,1,1,2,4,8,4,8][type] > 4) valOff = read32(off+8);
-      if (tag === 0x010F || tag === 0x0110) {
-        var str = readString(valOff, cnt);
-        if (tag === 0x010F) info.camera = str;
-        else info.camera = (info.camera ? info.camera + ' ' : '') + str;
-      }
-      if (tag === 0x0132 || tag === 0x9003) { info.dateTime = readString(valOff, cnt).replace(/(\d{4}):(\d{2}):(\d{2})/, '$1-$2-$3'); }
-      if (tag === 0x8769) { exifIfdOffset = read32(off+8); }
-      if (tag === 0x8825) { gpsIfdOffset = read32(off+8); }
-      off += 12;
-    }
-  }
-
-  parseIFD(ifdOffset);
-  if (exifIfdOffset > 0 && exifIfdOffset < data.length) parseIFD(exifIfdOffset);
-  var nextIfdOff = ifdOffset + 2 + read16(ifdOffset) * 12;
-  if (nextIfdOff + 4 <= data.length) { var nextIfd = read32(nextIfdOff); if (nextIfd > 0 && nextIfd < data.length) parseIFD(nextIfd); }
-
-  if (gpsIfdOffset > 0 && gpsIfdOffset + 2 < data.length) {
-    var gpsCount = read16(gpsIfdOffset); var gOff = gpsIfdOffset + 2;
-    var lat = 0, lng = 0, latRef = 'N', lngRef = 'E';
-    for (var i = 0; i < gpsCount && gOff + 12 <= data.length; i++) {
-      var gTag = read16(gOff), gType = read16(gOff+2), gCnt = read32(gOff+4), gValOff = gOff + 8;
-      if (gCnt * [0,1,1,2,4,8,1,1,2,4,8,4,8][gType] > 4) gValOff = read32(gOff+8);
-      if (gTag === 1) latRef = String.fromCharCode(data[gValOff]);
-      if (gTag === 3) lngRef = String.fromCharCode(data[gValOff]);
-      if (gTag === 2) { lat = readRational(gValOff) + readRational(gValOff+8)/60 + readRational(gValOff+16)/3600; }
-      if (gTag === 4) { lng = readRational(gValOff) + readRational(gValOff+8)/60 + readRational(gValOff+16)/3600; }
-      gOff += 12;
-    }
-    if (lat !== 0 || lng !== 0) {
-      if (latRef === 'S') lat = -lat;
-      if (lngRef === 'W') lng = -lng;
-      info.gps = { lat: lat, lng: lng };
-    }
-  }
-}
-
-function parseGIF(bytes, info) {
-  if (bytes.length < 13) return;
-  info.gifVersion = String.fromCharCode(bytes[3], bytes[4], bytes[5]);
-  info.width = bytes[6] | (bytes[7] << 8); info.height = bytes[8] | (bytes[9] << 8);
-  var offset = 13; if (bytes[10] & 0x80) offset += 3 * (1 << ((bytes[10] & 0x07) + 1));
-  var frames = 0, totalDelay = 0;
-  while (offset < bytes.length) {
-    if (bytes[offset] === 0x21) {
-      if (bytes[offset + 1] === 0xF9 && bytes[offset + 2] >= 4) { totalDelay += (bytes[offset + 4] | (bytes[offset + 5] << 8)) * 10; offset += bytes[offset + 2] + 4; }
-      else if (bytes[offset + 1] === 0xFF && bytes[offset + 2] >= 15) {
-        var nsStart = offset + 3, nsLen = bytes[offset + 2];
-        if (String.fromCharCode.apply(null, Array.from(bytes.slice(nsStart, nsStart + 11))) === 'NETSCAPE2.0') {
-          info.loopCount = bytes[nsStart + 12] | (bytes[nsStart + 13] << 8);
-        }
-        offset += bytes[offset + 2] + 3;
-      } else { offset += 2; while (offset < bytes.length && bytes[offset] !== 0) offset += bytes[offset] + 1; offset++; }
-    }
-    else if (bytes[offset] === 0x2C) { frames++; offset += 10; if (bytes[offset - 1] & 0x80) offset += 3 * (1 << ((bytes[offset - 1] & 0x07) + 1)); offset++; while (offset < bytes.length && bytes[offset] !== 0) offset += bytes[offset] + 1; offset++; }
-    else if (bytes[offset] === 0x3B) { break; } else { offset++; }
-  }
-  info.frames = frames; info.duration = totalDelay / 1000; info.animated = frames > 1;
-}
-
-function parseWebP(bytes, info) {
-  if (bytes.length < 30) return; var offset = 12; var frameDurations = [];
-  while (offset < bytes.length - 8) {
-    var chunk = String.fromCharCode(bytes[offset], bytes[offset+1], bytes[offset+2], bytes[offset+3]);
-    var size = bytes[offset+4] | (bytes[offset+5]<<8) | (bytes[offset+6]<<16) | (bytes[offset+7]<<24);
-    if (chunk === 'VP8X') { info.animated = !!(bytes[offset + 8] & 0x02); info.hasAlpha = !!(bytes[offset + 8] & 0x10); info.width = ((bytes[offset+12] | (bytes[offset+13]<<8) | (bytes[offset+14]<<16)) & 0xFFFFFF) + 1; info.height = ((bytes[offset+15] | (bytes[offset+16]<<8) | (bytes[offset+17]<<16)) & 0xFFFFFF) + 1; }
-    else if (chunk === 'VP8 ') { info.compression = 'Lossy'; if (!info.width && size > 10) { info.width = (bytes[offset+14] | (bytes[offset+15]<<8)) & 0x3FFF; info.height = (bytes[offset+16] | (bytes[offset+17]<<8)) & 0x3FFF; } }
-    else if (chunk === 'VP8L') { info.compression = 'Lossless'; }
-    else if (chunk === 'ANIM') { info.loopCount = bytes[offset+8] | (bytes[offset+9] << 8); }
-    else if (chunk === 'ANMF') { info.frames++; frameDurations.push(bytes[offset+20] | (bytes[offset+21] << 8)); }
-    else if (chunk === 'EXIF') { var exifBytes = bytes.slice(offset + 8, offset + 8 + size); if (exifBytes[0] === 0x49 || exifBytes[0] === 0x4D) { parseExifData(exifBytes, info); } else if (exifBytes.length > 6 && String.fromCharCode(exifBytes[0], exifBytes[1], exifBytes[2], exifBytes[3]) === 'Exif') { parseExifData(exifBytes.slice(6), info); } }
-    offset += 8 + size + (size & 1);
-  }
-  if (frameDurations.length > 1) { var sorted = frameDurations.slice(0, -1).sort(function(a, b) { return a - b; }); var median = sorted[Math.floor(sorted.length / 2)]; if (frameDurations[frameDurations.length - 1] > median * 3) { info.duration = frameDurations.slice(0, -1).reduce(function(s, d) { return s + d; }, 0); } else { info.duration = frameDurations.reduce(function(s, d) { return s + d; }, 0); } }
-  else { info.duration = frameDurations.reduce(function(s, d) { return s + d; }, 0); }
-  info.duration /= 1000;
-}
-
-function parsePNG(bytes, info) {
-  if (bytes.length < 33) return; info.width = (bytes[16]<<24)|(bytes[17]<<16)|(bytes[18]<<8)|bytes[19]; info.height = (bytes[20]<<24)|(bytes[21]<<16)|(bytes[22]<<8)|bytes[23];
-  info.bitDepth = bytes[24]; var colorType = bytes[25];
-  var COLOR_TYPES = ['Grayscale', '', 'RGB', 'Indexed', 'Grayscale+Alpha', '', 'RGBA'];
-  info.colorType = COLOR_TYPES[colorType] || ('Type ' + colorType);
-  info.hasAlpha = (colorType === 4 || colorType === 6);
-  var offset = 8, totalDelay = 0;
-  while (offset < bytes.length - 8) { var len = (bytes[offset]<<24)|(bytes[offset+1]<<16)|(bytes[offset+2]<<8)|bytes[offset+3]; var type = String.fromCharCode(bytes[offset+4],bytes[offset+5],bytes[offset+6],bytes[offset+7]);
-    if (type === 'acTL') { info.animated = true; info.format = 'APNG'; info.frames = (bytes[offset+8]<<24)|(bytes[offset+9]<<16)|(bytes[offset+10]<<8)|bytes[offset+11]; info.loopCount = (bytes[offset+12]<<24)|(bytes[offset+13]<<16)|(bytes[offset+14]<<8)|bytes[offset+15]; }
-    else if (type === 'fcTL') { var dn = (bytes[offset+28]<<8)|bytes[offset+29]; var dd = (bytes[offset+30]<<8)|bytes[offset+31]; if (dd === 0) dd = 100; totalDelay += dn / dd; }
-    else if (type === 'eXIf') { parseExifData(bytes.slice(offset + 8, offset + 8 + len), info); }
-    offset += 12 + len; }
-  info.duration = totalDelay;
-}
-
-function parsePAG(bytes, info) { info.animated = true; if (bytes.length > 20) { info.frames = 0; info.duration = 0; } }
-
-function parseHEIF(bytes, info) {
-  function read32At(off) { return (bytes[off]<<24)|(bytes[off+1]<<16)|(bytes[off+2]<<8)|bytes[off+3]; }
-  var scanEnd = Math.min(bytes.length, 500000);
-
-  // Find all ispe boxes - use largest dimensions (main image, not thumbnail)
-  var maxW = 0, maxH = 0;
-  for (var i = 0; i < scanEnd - 20; i++) {
-    if (bytes[i+4] === 0x69 && bytes[i+5] === 0x73 && bytes[i+6] === 0x70 && bytes[i+7] === 0x65) {
-      var w = read32At(i + 12), h = read32At(i + 16);
-      if (w > 0 && h > 0 && w < 65536 && h < 65536 && w * h > maxW * maxH) { maxW = w; maxH = h; }
-    }
-  }
-  if (maxW > 0) { info.width = maxW; info.height = maxH; }
-
-  // Find EXIF: scan for "Exif\x00\x00" + TIFF header
-  for (var i = 0; i < scanEnd - 14; i++) {
-    if (bytes[i] === 0x45 && bytes[i+1] === 0x78 && bytes[i+2] === 0x69 && bytes[i+3] === 0x66 && bytes[i+4] === 0x00 && bytes[i+5] === 0x00) {
-      var ts = i + 6;
-      if ((bytes[ts] === 0x49 && bytes[ts+1] === 0x49) || (bytes[ts] === 0x4D && bytes[ts+1] === 0x4D)) {
-        parseExifData(bytes.slice(ts), info); return;
-      }
-    }
-  }
-  // Fallback: scan for TIFF header with valid IFD offset
-  for (var i = 100; i < scanEnd - 12; i++) {
-    var isTiff = (bytes[i] === 0x49 && bytes[i+1] === 0x49 && bytes[i+2] === 0x2A && bytes[i+3] === 0x00) ||
-                 (bytes[i] === 0x4D && bytes[i+1] === 0x4D && bytes[i+2] === 0x00 && bytes[i+3] === 0x2A);
-    if (isTiff) {
-      var le = bytes[i] === 0x49;
-      var ifdOff = le ? (bytes[i+4]|(bytes[i+5]<<8)|(bytes[i+6]<<16)|(bytes[i+7]<<24)) : read32At(i+4);
-      if (ifdOff >= 8 && ifdOff < 65536) { parseExifData(bytes.slice(i), info); return; }
-    }
-  }
-}
-
-function hideAllPreviews() { dropZoneLottie.classList.add('hidden'); dropZoneImage.classList.add('hidden'); dropZoneVideo.classList.add('hidden'); dropZoneFile.classList.add('hidden'); previewLottie.classList.add('hidden'); previewImage.classList.add('hidden'); previewVideo.classList.add('hidden'); previewFile.classList.add('hidden'); previewDoc.classList.add('hidden'); }
-
-function updateProgress() { if (!anim) return; progressFill.style.width = (anim.totalFrames > 0 ? (anim.currentFrame / anim.totalFrames * 100) : 0) + '%'; progressTime.textContent = Math.round(anim.currentFrame) + ' / ' + Math.round(anim.totalFrames); progressRAF = requestAnimationFrame(updateProgress); }
-function togglePlay() { if (!anim) return; if (isPlaying) { anim.pause(); isPlaying = false; document.getElementById('btn-play').innerHTML = '&#9654;'; cancelAnimationFrame(progressRAF); } else { anim.play(); isPlaying = true; document.getElementById('btn-play').innerHTML = '&#9208;'; updateProgress(); } }
-function stopAnim() { if (!anim) return; anim.stop(); isPlaying = false; document.getElementById('btn-play').innerHTML = '&#9654;'; progressFill.style.width = '0%'; progressTime.textContent = '0 / ' + Math.round(anim.totalFrames); cancelAnimationFrame(progressRAF); }
-function toggleLoop() { isLooping = !isLooping; document.getElementById('btn-loop').classList.toggle('active', isLooping); if (anim) anim.loop = isLooping; }
-function changeSpeed(val) { if (anim) anim.setSpeed(parseFloat(val)); }
-function seekAnim(e) { if (!anim) return; var rect = e.currentTarget.getBoundingClientRect(); anim.goToAndPlay(Math.round((e.clientX - rect.left) / rect.width * anim.totalFrames), true); isPlaying = true; document.getElementById('btn-play').innerHTML = '&#9208;'; updateProgress(); }
-function setBg(color, el) { document.querySelectorAll('.bg-dot').forEach(function(d) { d.classList.remove('active'); }); el.classList.add('active'); var target = currentMode === 'lottie' ? lottiePlayer : document.querySelector('.img-preview-wrap'); target.style.background = color === 'checker' ? 'repeating-conic-gradient(#e7e5e4 0% 25%, #fff 0% 50%) 50% / 20px 20px' : color; }
-
-function resetAll() {
-  if (anim) { anim.destroy(); anim = null; } cancelAnimationFrame(progressRAF);
-  fileMap.clear(); animGroups = []; fileTree.innerHTML = ''; lottiePlayer.innerHTML = ''; lottiePlayer.style.background = '';
-  imgPreviewEl.src = ''; imgInfoPanel.innerHTML = '';
-  videoPlayer.src = ''; videoInfoPanel.innerHTML = '';
-  fileContent.innerHTML = ''; fileHex.innerHTML = ''; fileHex.classList.add('hidden'); filePreviewHeader.innerHTML = '';
-  docIframe.src = ''; docIframe.srcdoc = ''; docEmbed.data = ''; docInfoHeader.innerHTML = '';
-  var oldPdfIframe = document.querySelector('.pdf-iframe'); if (oldPdfIframe) oldPdfIframe.remove();
-  modeState[currentMode] = { fileMap: new Map(), animGroups: [], hasContent: false, activeFile: null };
-  hideAllPreviews();
-  if (currentMode === 'lottie') dropZoneLottie.classList.remove('hidden');
-  else if (currentMode === 'image') dropZoneImage.classList.remove('hidden');
-  else if (currentMode === 'video') dropZoneVideo.classList.remove('hidden');
-  else dropZoneFile.classList.remove('hidden');
-  controls.classList.add('hidden'); infoBadge.style.display = 'none'; progressFill.style.width = '0%'; progressTime.textContent = '0 / 0';
-}
-
-function isBinary(buffer) {
-  var bytes = new Uint8Array(buffer).slice(0, 512);
-  var nonPrintable = 0;
-  for (var i = 0; i < bytes.length; i++) {
-    if (bytes[i] === 0) return true;
-    if (bytes[i] < 0x09 || (bytes[i] > 0x0D && bytes[i] < 0x20)) nonPrintable++;
-  }
-  return nonPrintable > bytes.length * 0.1;
-}
-
-function hexDump(buffer) {
-  var bytes = new Uint8Array(buffer), lines = [], maxRows = 5000;
-  var limit = Math.min(bytes.length, maxRows * 16);
-  for (var offset = 0; offset < limit; offset += 16) {
-    var hex = '', ascii = '';
-    for (var j = 0; j < 16; j++) {
-      if (offset + j < bytes.length) {
-        var b = bytes[offset + j];
-        hex += (b < 16 ? '0' : '') + b.toString(16) + ' ';
-        ascii += (b >= 0x20 && b < 0x7F) ? String.fromCharCode(b) : '.';
-      } else { hex += '   '; ascii += ' '; }
-    }
-    lines.push('<span class="hex-line"><span class="hex-offset">' + ('00000000' + offset.toString(16)).slice(-8) + '</span><span class="hex-bytes">' + hex + '</span><span class="hex-ascii">|' + ascii + '|</span></span>');
-  }
-  if (bytes.length > limit) lines.push('<span class="hex-line" style="color:var(--text-muted)">... ' + (bytes.length - limit).toLocaleString() + ' more bytes</span>');
-  return lines.join('\n');
-}
-
-async function showVideoPreview(filePath) {
-  modeState[currentMode].activeFile = filePath;
-  document.querySelectorAll('.tree-item').forEach(function(el) { el.classList.toggle('active', el.title === filePath); });
-  var file = fileMap.get(filePath); if (!file) return;
-  hideAllPreviews(); previewVideo.classList.remove('hidden'); controls.classList.add('hidden');
-  var url = URL.createObjectURL(file);
-  videoPlayer.src = url;
-  videoPlayer.style.display = '';
-  infoBadge.style.display = '';
-  infoBadge.textContent = file.name + ' · ' + formatSize(file.size);
-  videoPlayer.onloadedmetadata = function() {
-    var html = '';
-    html += infoItem('Filename', file.name);
-    html += infoItem('Format', (file.name.split('.').pop() || '').toUpperCase());
-    html += infoItem('Resolution', videoPlayer.videoWidth + ' × ' + videoPlayer.videoHeight + ' px');
-    html += infoItem('Duration', formatDuration(videoPlayer.duration));
-    html += infoItem('File Size', formatSize(file.size));
-    videoInfoPanel.innerHTML = html;
-    infoBadge.textContent = (file.name.split('.').pop() || '').toUpperCase() + ' · ' + videoPlayer.videoWidth + 'x' + videoPlayer.videoHeight + ' · ' + formatDuration(videoPlayer.duration);
-  };
-}
-
-function formatDuration(seconds) {
-  if (!isFinite(seconds) || seconds < 0) return '—';
-  var h = Math.floor(seconds / 3600), m = Math.floor((seconds % 3600) / 60), s = Math.floor(seconds % 60);
-  if (h > 0) return h + ':' + ('0' + m).slice(-2) + ':' + ('0' + s).slice(-2);
-  return m + ':' + ('0' + s).slice(-2);
-}
-
-async function showDocPreview(file, type) {
-  modeState[currentMode].activeFile = Array.from(fileMap.keys()).find(function(k) { return fileMap.get(k) === file; }) || file.name;
-  document.querySelectorAll('.tree-item').forEach(function(el) { el.classList.toggle('active', el.title === modeState[currentMode].activeFile); });
-  hideAllPreviews(); previewDoc.classList.remove('hidden'); controls.classList.add('hidden');
-  infoBadge.style.display = '';
-  infoBadge.textContent = file.name + ' · ' + formatSize(file.size);
-  docIframe.style.display = 'none';
-  docIframe.srcdoc = '';
-  docEmbed.style.display = 'none';
-  docEmbed.data = '';
-  // Create a fresh iframe without any sandbox for PDF
-  var container = document.getElementById('preview-doc');
-  var oldIframe = container.querySelector('.pdf-iframe');
-  if (oldIframe) oldIframe.remove();
-  var pdfIframe = document.createElement('iframe');
-  pdfIframe.className = 'pdf-iframe';
-  pdfIframe.style.cssText = 'flex:1;width:100%;border:none;background:#fff';
-  pdfIframe.src = URL.createObjectURL(file);
-  container.appendChild(pdfIframe);
-  var headerHtml = '';
-  headerHtml += '<span class="fph-item"><span class="fph-label">Name:</span><span class="fph-value">' + file.name + '</span></span>';
-  headerHtml += '<span class="fph-item"><span class="fph-label">Format:</span><span class="fph-value" style="color:var(--accent)">' + type.toUpperCase() + '</span></span>';
-  headerHtml += '<span class="fph-item"><span class="fph-label">Size:</span><span class="fph-value">' + formatSize(file.size) + '</span></span>';
-  docInfoHeader.innerHTML = headerHtml;
-}
-
-async function showEpubPreview(file) {
-  modeState[currentMode].activeFile = Array.from(fileMap.keys()).find(function(k) { return fileMap.get(k) === file; }) || file.name;
-  document.querySelectorAll('.tree-item').forEach(function(el) { el.classList.toggle('active', el.title === modeState[currentMode].activeFile); });
-  hideAllPreviews(); previewDoc.classList.remove('hidden'); controls.classList.add('hidden');
-  infoBadge.style.display = '';
-  infoBadge.textContent = file.name + ' · ' + formatSize(file.size);
-  try {
-    var zip = await JSZip.loadAsync(file);
-    var containerFile = zip.file('META-INF/container.xml');
-    if (!containerFile) throw new Error('Invalid EPUB: missing container.xml');
-    var containerXml = new DOMParser().parseFromString(await containerFile.async('text'), 'text/xml');
-    var rootfileEl = containerXml.querySelector('rootfile');
-    if (!rootfileEl) throw new Error('Invalid EPUB: missing rootfile');
-    var opfPath = rootfileEl.getAttribute('full-path');
-    var opfFile = zip.file(opfPath);
-    if (!opfFile) throw new Error('Invalid EPUB: OPF not found at ' + opfPath);
-    var opfText = await opfFile.async('text');
-    var opfDoc = new DOMParser().parseFromString(opfText, 'text/xml');
-    var title = opfDoc.querySelector('dc\\:title, title')?.textContent || file.name.replace(/\.epub$/i, '');
-    var creator = opfDoc.querySelector('dc\\:creator, creator')?.textContent || '—';
-    var baseDir = opfPath.substring(0, opfPath.lastIndexOf('/') + 1);
-    var manifestMap = {};
-    opfDoc.querySelectorAll('manifest > item').forEach(function(item) {
-      manifestMap[item.getAttribute('id')] = { href: item.getAttribute('href'), mediaType: item.getAttribute('media-type') };
-    });
-    var spineIds = [];
-    opfDoc.querySelectorAll('spine > itemref').forEach(function(ref) { spineIds.push(ref.getAttribute('idref')); });
-    var cssText = '';
-    for (var id in manifestMap) {
-      var m = manifestMap[id];
-      if (m.mediaType === 'text/css') {
-        var cssFile = zip.file(baseDir + m.href);
-        if (cssFile) { cssText += '/* ' + m.href + ' */\n' + (await cssFile.async('text')) + '\n'; }
-      }
-    }
-    var bodyHtml = '';
-    for (var i = 0; i < spineIds.length; i++) {
-      var spineId = spineIds[i];
-      var contentHref = manifestMap[spineId]?.href;
-      if (!contentHref) continue;
-      var contentFile = zip.file(baseDir + contentHref);
-      if (!contentFile) continue;
-      var contentText = await contentFile.async('text');
-      var bodyMatch = contentText.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
-      if (bodyMatch) { bodyHtml += '<section id="epub-chapter-' + i + '">' + bodyMatch[1] + '</section>\n'; }
-      else { bodyHtml += contentText; }
-    }
-    var fullHtml = '<!DOCTYPE html><html><head><meta charset="utf-8"><style>' + cssText + ' body{font-family:Georgia,serif;font-size:16px;line-height:1.8;color:#333;padding:24px;max-width:720px;margin:0 auto} img{max-width:100%;height:auto} ' + '</style></head><body>' + bodyHtml + '</body></html>';
-    docIframe.style.display = '';
-    docEmbed.style.display = 'none';
-    docEmbed.data = '';
-    docIframe.setAttribute('sandbox', 'allow-scripts allow-same-origin');
-    docIframe.srcdoc = fullHtml;
-    docIframe.src = '';
-    var headerHtml = '';
-    headerHtml += '<span class="fph-item"><span class="fph-label">Title:</span><span class="fph-value">' + title + '</span></span>';
-    headerHtml += '<span class="fph-item"><span class="fph-label">Author:</span><span class="fph-value">' + creator + '</span></span>';
-    headerHtml += '<span class="fph-item"><span class="fph-label">Format:</span><span class="fph-value" style="color:var(--amber)">EPUB</span></span>';
-    headerHtml += '<span class="fph-item"><span class="fph-label">Size:</span><span class="fph-value">' + formatSize(file.size) + '</span></span>';
-    headerHtml += '<span class="fph-item"><span class="fph-label">Chapters:</span><span class="fph-value">' + spineIds.length + '</span></span>';
-    docInfoHeader.innerHTML = headerHtml;
-    infoBadge.textContent = 'EPUB · ' + title + ' · ' + spineIds.length + ' chapters';
-  } catch(e) {
-    docInfoHeader.innerHTML = '<span class="fph-item"><span class="fph-label">Error:</span><span class="fph-value" style="color:var(--destructive)">' + e.message + '</span></span>';
-    infoBadge.textContent = 'EPUB · Error';
-  }
-}
-
-async function showFilePreview(filePath) {
-  modeState[currentMode].activeFile = filePath;
-  document.querySelectorAll('.tree-item').forEach(function(el) { el.classList.toggle('active', el.title === filePath); });
-  var file = fileMap.get(filePath); if (!file) return;
-  var name = file.name.toLowerCase();
-  if (name.endsWith('.pdf')) { showDocPreview(file, 'PDF'); return; }
-  if (name.endsWith('.epub')) { showEpubPreview(file); return; }
-  hideAllPreviews(); previewFile.classList.remove('hidden'); controls.classList.add('hidden');
-  infoBadge.style.display = '';
-  infoBadge.textContent = file.name + ' · ' + formatSize(file.size);
-  var buffer = await file.arrayBuffer();
-  var headerHtml = '';
-  headerHtml += '<span class="fph-item"><span class="fph-label">Name:</span><span class="fph-value">' + file.name + '</span></span>';
-  headerHtml += '<span class="fph-item"><span class="fph-label">Size:</span><span class="fph-value">' + formatSize(file.size) + '</span></span>';
-  if (isBinary(buffer)) {
-    headerHtml += '<span class="fph-item"><span class="fph-label">Type:</span><span class="fph-value" style="color:var(--amber)">Binary</span></span>';
-    filePreviewHeader.innerHTML = headerHtml;
-    fileContent.innerHTML = '';
-    fileContent.style.display = 'none';
-    fileHex.innerHTML = hexDump(buffer);
-    fileHex.classList.remove('hidden');
-  } else {
-    var decoder = new TextDecoder('utf-8', { fatal: false });
-    var text = decoder.decode(buffer);
-    var isJson = false;
-    try { var parsed = JSON.parse(text); text = JSON.stringify(parsed, null, 2); isJson = true; } catch(e) {}
-    var lines = text.split('\n');
-    headerHtml += '<span class="fph-item"><span class="fph-label">Lines:</span><span class="fph-value">' + lines.length.toLocaleString() + '</span></span>';
-    if (isJson) headerHtml += '<span class="fph-item"><span class="fph-label">Type:</span><span class="fph-value" style="color:var(--green)">JSON</span></span>';
-    else headerHtml += '<span class="fph-item"><span class="fph-label">Type:</span><span class="fph-value">Text</span></span>';
-    filePreviewHeader.innerHTML = headerHtml;
-    fileHex.classList.add('hidden');
-    fileHex.innerHTML = '';
-    fileContent.style.display = '';
-    var escaped = text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-    fileContent.innerHTML = '<span class="line">' + escaped.split('\n').join('</span>\n<span class="line">') + '</span>';
-  }
-}
-
-// Sidebar resize
-(function(){
-  var resizer = document.getElementById('sidebar-resizer');
-  var sidebar = resizer.parentElement;
-  var startX, startW;
-  resizer.addEventListener('mousedown', function(e){
-    startX = e.clientX; startW = sidebar.offsetWidth;
-    resizer.classList.add('active');
-    document.addEventListener('mousemove', onMove);
-    document.addEventListener('mouseup', onUp);
-    e.preventDefault();
-  });
-  function onMove(e){
-    var w = startW + (e.clientX - startX);
-    if(w < 140) w = 140;
-    if(w > 450) w = 450;
-    sidebar.style.width = w + 'px';
-  }
-  function onUp(){
-    resizer.classList.remove('active');
-    document.removeEventListener('mousemove', onMove);
-    document.removeEventListener('mouseup', onUp);
-  }
-})();
-</script>
+<script type="module" src="js/main.js"></script>
 </body>
 </html>
