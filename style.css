@@ -243,7 +243,7 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--t
   .img-info-item .label{font-size:8px}
 
   /* Image preview — scrollable */
-  .img-preview-container{position:relative;inset:auto;width:100%;height:100%;padding:12px;padding-bottom:env(safe-area-inset-bottom, 20px);overflow-y:scroll;-webkit-overflow-scrolling:touch;justify-content:flex-start}
+  .img-preview-container{position:relative;inset:auto;width:100%;height:100%;padding:12px;padding-bottom:calc(env(safe-area-inset-bottom, 20px) + 40px);overflow-y:scroll;-webkit-overflow-scrolling:touch;justify-content:flex-start}
 
   /* File preview — horizontal scroll */
   .file-content{font-size:12px;overflow-x:auto}
