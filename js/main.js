@@ -146,6 +146,25 @@ document.body.addEventListener('drop', async function(e) {
   } catch(err) { console.error('Drop error:', err); }
 });
 
+// Clipboard paste — image mode: paste images directly
+document.addEventListener('paste', async function(e) {
+  if (state.currentMode !== 'image') return;
+  var items = e.clipboardData && e.clipboardData.items;
+  if (!items) return;
+  var files = [];
+  for (var i = 0; i < items.length; i++) {
+    if (items[i].type.indexOf('image') === 0) {
+      var blob = items[i].getAsFile();
+      if (blob) {
+        var ext = blob.type.split('/')[1] || 'png';
+        var file = new File([blob], 'clipboard-' + Date.now() + '.' + ext, { type: blob.type });
+        files.push(file);
+      }
+    }
+  }
+  if (files.length > 0) processFiles(files);
+});
+
 // File input listeners
 ['lottie-folder','lottie-zip','lottie-json','lottie-folder2','lottie-zip2','lottie-json2'].forEach(function(id) {
   document.getElementById(id).addEventListener('change', function(e) { if (e.target.files.length > 0) processFiles(e.target.files); });
