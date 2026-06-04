@@ -288,3 +288,38 @@ document.querySelectorAll('.bg-dot').forEach(function(dot) {
     }
   });
 })();
+
+// PWA: Register service worker and handle share target
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/sw.js');
+  navigator.serviceWorker.addEventListener('message', function(e) {
+    if (e.data && e.data.type === 'share-target-files' && e.data.files && e.data.files.length > 0) {
+      // Determine mode from first file type
+      var first = e.data.files[0];
+      var name = (first.name || '').toLowerCase();
+      var type = (first.type || '').toLowerCase();
+      if (type.startsWith('image/') || /\.(png|jpg|jpeg|webp|gif|svg|heic|heif|avif)$/.test(name)) {
+        switchToMode('image');
+      } else if (type.startsWith('video/') || /\.(mp4|webm|mov|mkv)$/.test(name)) {
+        switchToMode('video');
+      } else if (type.startsWith('audio/') || /\.(mp3|wav|flac|aac|m4a|ogg|wma)$/.test(name)) {
+        switchToMode('audio');
+      } else if (/\.json$/.test(name) || type === 'application/json') {
+        switchToMode('lottie');
+      } else {
+        switchToMode('file');
+      }
+      processFiles(e.data.files);
+    }
+  });
+}
+
+function switchToMode(mode) {
+  var idx = TAB_MODES.indexOf(mode);
+  if (idx === -1) return;
+  var tabs = document.querySelectorAll('.tab-btn');
+  tabs.forEach(function(t, i) { t.classList.toggle('active', i === idx); });
+  saveCurrentState();
+  state.currentMode = mode;
+  restoreModeState(mode);
+}
