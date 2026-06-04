@@ -2,8 +2,9 @@
 import { playJson, togglePlay, stopAnim, toggleLoop, changeSpeed, seekAnim, setBg, updateProgress } from './preview-lottie.js';
 import { showImagePreview, formatSize, cleanupPAGView } from './preview-image.js';
 import { showVideoPreview } from './preview-video.js';
+import { showAudioPreview, cleanupAudio } from './preview-audio.js';
 import { showFilePreview } from './preview-file.js';
-import { processEntries, processFiles, buildTree, getActiveDropZone, toggleMenu, closeMenu, isImageFile, isVideoFile } from './file-handler.js';
+import { processEntries, processFiles, buildTree, getActiveDropZone, toggleMenu, closeMenu, isImageFile, isVideoFile, isAudioFile } from './file-handler.js';
 
 // Shared state — exported for other modules to import
 export var state = {
@@ -18,6 +19,7 @@ export var state = {
     lottie: { fileMap: new Map(), animGroups: [], hasContent: false, activeFile: null },
     image: { fileMap: new Map(), hasContent: false, activeFile: null },
     video: { fileMap: new Map(), hasContent: false, activeFile: null },
+    audio: { fileMap: new Map(), hasContent: false, activeFile: null },
     file: { fileMap: new Map(), hasContent: false, activeFile: null }
   }
 };
@@ -26,15 +28,17 @@ export function hideAllPreviews() {
   document.getElementById('drop-zone-lottie').classList.add('hidden');
   document.getElementById('drop-zone-image').classList.add('hidden');
   document.getElementById('drop-zone-video').classList.add('hidden');
+  document.getElementById('drop-zone-audio').classList.add('hidden');
   document.getElementById('drop-zone-file').classList.add('hidden');
   document.getElementById('preview-lottie').classList.add('hidden');
   document.getElementById('preview-image').classList.add('hidden');
   document.getElementById('preview-video').classList.add('hidden');
+  document.getElementById('preview-audio').classList.add('hidden');
   document.getElementById('preview-file').classList.add('hidden');
   document.getElementById('preview-doc').classList.add('hidden');
 }
 
-var TAB_MODES = ['lottie', 'image', 'video', 'file'];
+var TAB_MODES = ['lottie', 'image', 'video', 'audio', 'file'];
 
 function saveCurrentState() {
   var s = state.modeState[state.currentMode];
@@ -54,12 +58,14 @@ function restoreModeState(mode) {
     if (mode === 'lottie' && s.activeFile) playJson(s.activeFile);
     else if (mode === 'image' && s.activeFile) showImagePreview(s.activeFile);
     else if (mode === 'video' && s.activeFile) showVideoPreview(s.activeFile);
+    else if (mode === 'audio' && s.activeFile) showAudioPreview(s.activeFile);
     else if (mode === 'file' && s.activeFile) showFilePreview(s.activeFile);
   } else {
     document.getElementById('file-tree').innerHTML = '';
     if (mode === 'lottie') document.getElementById('drop-zone-lottie').classList.remove('hidden');
     else if (mode === 'image') document.getElementById('drop-zone-image').classList.remove('hidden');
     else if (mode === 'video') document.getElementById('drop-zone-video').classList.remove('hidden');
+    else if (mode === 'audio') document.getElementById('drop-zone-audio').classList.remove('hidden');
     else document.getElementById('drop-zone-file').classList.remove('hidden');
   }
 }
@@ -96,6 +102,7 @@ function resetAll() {
   state.fileMap.clear(); state.animGroups = []; fileTree.innerHTML = ''; lottiePlayer.innerHTML = ''; lottiePlayer.style.background = '';
   imgPreviewEl.src = ''; imgInfoPanel.innerHTML = '';
   videoPlayer.src = ''; videoInfoPanel.innerHTML = '';
+  cleanupAudio(); document.getElementById('audio-info-panel').innerHTML = '';
   fileContent.innerHTML = ''; fileHex.innerHTML = ''; fileHex.classList.add('hidden'); filePreviewHeader.innerHTML = '';
   docIframe.src = ''; docIframe.srcdoc = ''; docEmbed.data = ''; docInfoHeader.innerHTML = '';
   var oldPdfIframe = document.querySelector('.pdf-iframe'); if (oldPdfIframe) oldPdfIframe.remove();
@@ -104,6 +111,7 @@ function resetAll() {
   if (state.currentMode === 'lottie') document.getElementById('drop-zone-lottie').classList.remove('hidden');
   else if (state.currentMode === 'image') document.getElementById('drop-zone-image').classList.remove('hidden');
   else if (state.currentMode === 'video') document.getElementById('drop-zone-video').classList.remove('hidden');
+  else if (state.currentMode === 'audio') document.getElementById('drop-zone-audio').classList.remove('hidden');
   else document.getElementById('drop-zone-file').classList.remove('hidden');
   controls.classList.add('hidden'); infoBadge.style.display = 'none'; progressFill.style.width = '0%'; progressTime.textContent = '0 / 0';
 }
@@ -146,6 +154,9 @@ document.body.addEventListener('drop', async function(e) {
   document.getElementById(id).addEventListener('change', function(e) { if (e.target.files.length > 0) processFiles(e.target.files); });
 });
 ['video-folder','video-zip','video-file','video-folder2','video-zip2','video-file2'].forEach(function(id) {
+  document.getElementById(id).addEventListener('change', function(e) { if (e.target.files.length > 0) processFiles(e.target.files); });
+});
+['audio-folder','audio-zip','audio-file','audio-folder2','audio-zip2','audio-file2'].forEach(function(id) {
   document.getElementById(id).addEventListener('change', function(e) { if (e.target.files.length > 0) processFiles(e.target.files); });
 });
 ['file-folder','file-zip','file-any','file-folder2','file-zip2','file-any2'].forEach(function(id) {
