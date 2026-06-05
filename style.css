@@ -12,7 +12,7 @@
 body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--text);height:100vh;height:100dvh;display:flex;flex-direction:column;overflow:hidden;-webkit-font-smoothing:antialiased}
 
 /* Header */
-.header{padding:0 20px;height:54px;background:var(--bg-secondary);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:20px;position:relative}
+.header{padding:0 20px;padding-top:env(safe-area-inset-top, 0px);height:calc(54px + env(safe-area-inset-top, 0px));background:var(--bg-secondary);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:20px;position:relative}
 .header::after{content:'';position:absolute;bottom:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,var(--accent-glow),transparent)}
 .header-brand{display:flex;align-items:center;gap:12px}
 .header-logo{width:32px;height:32px;border-radius:9px;background:var(--accent);display:flex;align-items:center;justify-content:center;box-shadow:0 0 16px var(--accent-glow),inset 0 1px 0 rgba(255,255,255,0.15)}
