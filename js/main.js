@@ -3,7 +3,7 @@ import { playJson, togglePlay, stopAnim, toggleLoop, changeSpeed, seekAnim, setB
 import { showImagePreview, formatSize, cleanupPAGView } from './preview-image.js';
 import { showVideoPreview } from './preview-video.js';
 import { showAudioPreview, cleanupAudio } from './preview-audio.js';
-import { showFilePreview } from './preview-file.js';
+import { showFilePreview, cleanupFontPreview } from './preview-file.js';
 import { processEntries, processFiles, buildTree, getActiveDropZone, toggleMenu, closeMenu, isImageFile, isVideoFile, isAudioFile } from './file-handler.js';
 
 // Shared state — exported for other modules to import
@@ -36,6 +36,7 @@ export function hideAllPreviews() {
   document.getElementById('preview-audio').classList.add('hidden');
   document.getElementById('preview-file').classList.add('hidden');
   document.getElementById('preview-doc').classList.add('hidden');
+  cleanupFontPreview();
 }
 
 var TAB_MODES = ['lottie', 'image', 'video', 'audio', 'file'];
@@ -530,3 +531,23 @@ function initTouchSwiping() {
 
 // Initialize touch swipe switching
 initTouchSwiping();
+
+// Initialize sidebar search and filter
+function initSidebarFilter() {
+  var search = document.getElementById('sidebar-search');
+  if (search) {
+    search.addEventListener('input', function() {
+      buildTree();
+    });
+  }
+
+  document.querySelectorAll('.filter-pill').forEach(function(pill) {
+    pill.addEventListener('click', function() {
+      document.querySelectorAll('.filter-pill').forEach(function(p) { p.classList.remove('active'); });
+      pill.classList.add('active');
+      buildTree();
+    });
+  });
+}
+
+initSidebarFilter();

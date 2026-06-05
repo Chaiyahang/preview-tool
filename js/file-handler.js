@@ -101,7 +101,27 @@ export function findAnimGroups() {
 export function buildTree() {
   var fileMap = state.fileMap;
   var fileTree = document.getElementById('file-tree');
-  var paths = Array.from(fileMap.keys()).sort();
+  
+  var searchInput = document.getElementById('sidebar-search');
+  var query = searchInput ? searchInput.value.toLowerCase().trim() : '';
+  
+  var activePill = document.querySelector('.filter-pill.active');
+  var filterType = activePill ? activePill.getAttribute('data-type') : 'all';
+
+  var paths = Array.from(fileMap.keys()).filter(function(p) {
+    if (query && p.toLowerCase().indexOf(query) === -1) {
+      return false;
+    }
+    if (filterType === 'all') return true;
+    var name = p.split('/').pop().toLowerCase();
+    var isJson = name.endsWith('.json');
+    var isImg = isImageFile(name);
+    if (filterType === 'img') return isImg;
+    if (filterType === 'json') return isJson;
+    if (filterType === 'other') return !isImg && !isJson;
+    return true;
+  }).sort();
+
   var tree = {};
   paths.forEach(function(p) { var parts = p.split('/'), node = tree; parts.forEach(function(part, i) { if (i === parts.length - 1) node[part] = null; else { if (!node[part]) node[part] = {}; node = node[part]; } }); });
   fileTree.innerHTML = '';

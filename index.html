@@ -44,6 +44,15 @@
 <div class="main">
   <div class="sidebar" id="sidebar">
     <div class="sidebar-header">Explorer</div>
+    <div class="sidebar-filter" id="sidebar-filter-container">
+      <input type="text" id="sidebar-search" placeholder="搜索文件...">
+      <div class="filter-pills">
+        <span class="filter-pill active" data-type="all">All</span>
+        <span class="filter-pill" data-type="img">图片</span>
+        <span class="filter-pill" data-type="json">动画</span>
+        <span class="filter-pill" data-type="other">其他</span>
+      </div>
+    </div>
     <div class="file-tree" id="file-tree"></div>
     <div class="sidebar-resizer" id="sidebar-resizer"></div>
   </div>
@@ -219,6 +228,17 @@
       <div class="file-preview-header" id="file-preview-header"></div>
       <pre class="file-content" id="file-content"></pre>
       <div class="file-hex hidden" id="file-hex"></div>
+      <div class="font-preview-wrap hidden" id="font-preview-wrap">
+        <div class="font-info-row">
+          <div class="font-title" id="font-title-text">字体样张</div>
+          <div class="font-slider-wrap">
+            <label for="font-size-slider">字号: <span id="font-size-label">36px</span></label>
+            <input type="range" id="font-size-slider" min="12" max="100" value="36">
+          </div>
+        </div>
+        <textarea class="font-specimen-input" id="font-specimen-input" rows="2" placeholder="在此输入自定义文本以测试字体...">The quick brown fox jumps over the lazy dog. 1234567890 汉字测试 零一二三四五六七八九十</textarea>
+        <div class="font-specimens" id="font-specimens-container"></div>
+      </div>
       <div class="float-browse" title="Load new files">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
         <div class="select-menu" id="menu-file-float">
