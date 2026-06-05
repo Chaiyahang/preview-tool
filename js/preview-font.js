@@ -92,6 +92,11 @@ export async function showFontPreview(file) {
   var slider = document.getElementById('font-size-slider');
   var label = document.getElementById('font-size-label');
 
+  // Apply preview font to the testing input box itself
+  if (input) {
+    input.style.fontFamily = '"' + fontId + '", sans-serif';
+  }
+
   var baseSizes = [12, 16, 20, 28, 36, 48, 72];
   var currentText = input.value || "The quick brown fox jumps over the lazy dog. 1234567890 汉字测试 零一二三四五六七八九十";
   var sliderVal = parseInt(slider.value, 10) || 36;
