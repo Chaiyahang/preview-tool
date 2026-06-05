@@ -665,4 +665,15 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--t
   transform: translateX(0);
 }
 
+.font-preview-container {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.font-preview-container.hidden {
+  display: none;
+}
+
 

@@ -33,6 +33,7 @@
     <button class="tab-btn">Image</button>
     <button class="tab-btn">Video</button>
     <button class="tab-btn">Audio</button>
+    <button class="tab-btn">Font</button>
     <button class="tab-btn">File</button>
   </div>
   <div class="header-meta">
@@ -187,6 +188,26 @@
       </div>
     </div>
 
+    <div class="drop-zone hidden" id="drop-zone-font">
+      <div class="drop-visual" style="font-family:'Georgia',serif; font-size:32px; font-weight:bold; color:var(--accent); border:2px solid var(--accent); border-radius:8px; width:56px; height:56px; display:flex; align-items:center; justify-content:center; margin-bottom:16px;">Ag</div>
+      <div class="drop-text">
+        <h2>Font Preview</h2>
+        <p>TTF / OTF / WOFF / WOFF2</p>
+      </div>
+      <div class="drop-hint">Drag files here or click Browse · Specimen preview & custom testing</div>
+      <div class="drop-actions">
+        <button class="select-btn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+          Browse Files
+        </button>
+        <div class="select-menu" id="menu-font">
+          <label><svg viewBox="0 0 24 24"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg> Folder<input type="file" id="font-folder" webkitdirectory multiple></label>
+          <label><svg viewBox="0 0 24 24"><path d="M21 8v13H3V8"/><path d="M1 3h22v5H1z"/><path d="M10 12h4"/></svg> ZIP<input type="file" id="font-zip" accept=".zip"></label>
+          <label><svg viewBox="0 0 24 24"><path d="M12 4v16M4 8h16"/></svg> Font<input type="file" id="font-file" accept=".ttf,.otf,.woff,.woff2" multiple></label>
+        </div>
+      </div>
+    </div>
+
     <div class="drop-zone hidden" id="drop-zone-file">
       <div class="drop-visual"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><line x1="10" y1="9" x2="9" y2="9"/></svg></div>
       <div class="drop-text">
@@ -236,11 +257,10 @@
       </div>
       <div class="img-info-panel" id="audio-info-panel"></div>
     </div>
-    <div class="file-preview-container hidden" id="preview-file">
-      <div class="file-preview-header" id="file-preview-header"></div>
-      <pre class="file-content" id="file-content"></pre>
-      <div class="file-hex hidden" id="file-hex"></div>
-      <div class="font-preview-wrap hidden" id="font-preview-wrap">
+
+    <div class="font-preview-container hidden" id="preview-font">
+      <div class="file-preview-header" id="font-preview-header"></div>
+      <div class="font-preview-wrap">
         <div class="font-info-row">
           <div class="font-title" id="font-title-text">字体样张</div>
           <div class="font-slider-wrap">
@@ -251,6 +271,20 @@
         <textarea class="font-specimen-input" id="font-specimen-input" rows="2" placeholder="在此输入自定义文本以测试字体...">The quick brown fox jumps over the lazy dog. 1234567890 汉字测试 零一二三四五六七八九十</textarea>
         <div class="font-specimens" id="font-specimens-container"></div>
       </div>
+      <div class="float-browse" title="Load new files">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+        <div class="select-menu" id="menu-font-float">
+          <label><svg viewBox="0 0 24 24"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg> Folder<input type="file" id="font-folder2" webkitdirectory multiple></label>
+          <label><svg viewBox="0 0 24 24"><path d="M21 8v13H3V8"/><path d="M1 3h22v5H1z"/><path d="M10 12h4"/></svg> ZIP<input type="file" id="font-zip2" accept=".zip"></label>
+          <label><svg viewBox="0 0 24 24"><path d="M12 4v16M4 8h16"/></svg> Font<input type="file" id="font-file2" accept=".ttf,.otf,.woff,.woff2" multiple></label>
+        </div>
+      </div>
+    </div>
+
+    <div class="file-preview-container hidden" id="preview-file">
+      <div class="file-preview-header" id="file-preview-header"></div>
+      <pre class="file-content" id="file-content"></pre>
+      <div class="file-hex hidden" id="file-hex"></div>
       <div class="float-browse" title="Load new files">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
         <div class="select-menu" id="menu-file-float">
