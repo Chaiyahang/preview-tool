@@ -1,7 +1,25 @@
 // preview-lottie.js — Lottie animation preview
 import { state, hideAllPreviews } from './main.js';
+import { infoItem } from './preview-image.js';
 
 function fileToDataUrl(file) { return new Promise(function(r) { var rd = new FileReader(); rd.onload = function() { r(rd.result); }; rd.readAsDataURL(file); }); }
+
+function countLottieLayers(layers) {
+  if (!layers) return 0;
+  var count = layers.length;
+  for (var i = 0; i < layers.length; i++) {
+    if (layers[i].layers) {
+      count += countLottieLayers(layers[i].layers);
+    }
+  }
+  return count;
+}
+
+function checkLottieExpressions(animData) {
+  var jsonStr = JSON.stringify(animData);
+  var matches = jsonStr.match(/"x"\s*:\s*"(?:[^"\\]|\\.)*"/g) || [];
+  return matches.length;
+}
 
 async function injectExternalImages(animData, imagesMap) {
   if (!animData.assets) return;
@@ -37,6 +55,32 @@ export async function playJson(jsonPath) {
   infoBadge.style.display = '';
   infoBadge.textContent = Math.round(state.anim.totalFrames) + ' frames  ·  ' + fps + ' fps  ·  ' + (state.anim.totalFrames / fps).toFixed(1) + 's';
   updateProgress();
+
+  // Populate Lottie Diagnostics Panel
+  var totalLayers = countLottieLayers(animData.layers);
+  var expressionCount = checkLottieExpressions(animData);
+  var imageAssets = animData.assets ? animData.assets.filter(function(a) { return !!a.p; }) : [];
+  var lottieInfoPanel = document.getElementById('lottie-info-panel');
+  if (lottieInfoPanel) {
+    var html = '';
+    html += infoItem('尺寸', (animData.w || 0) + ' × ' + (animData.h || 0) + ' px');
+    html += infoItem('时长', (state.anim.totalFrames / fps).toFixed(2) + 's');
+    html += infoItem('总帧数', Math.round(state.anim.totalFrames));
+    html += infoItem('帧率', fps + ' fps');
+    html += infoItem('Bodymovin版本', animData.v || '未知');
+    html += infoItem('总图层数', totalLayers);
+    if (imageAssets.length > 0) {
+      var statusText = (group && group.images.size > 0) ? '已关联' : '未关联/缺失';
+      var statusColor = (group && group.images.size > 0) ? 'var(--accent)' : 'var(--destructive)';
+      html += infoItem('外部图片', imageAssets.length + ' 张 (<span style="color:' + statusColor + '">' + statusText + '</span>)');
+    }
+    if (expressionCount > 0) {
+      html += infoItem('表达式', '<span style="color:var(--amber); font-weight:600;">有 (' + expressionCount + ' 处表达式，可能影响运行性能) ⚠️</span>');
+    } else {
+      html += infoItem('表达式', '无');
+    }
+    lottieInfoPanel.innerHTML = html;
+  }
 }
 
 export function updateProgress() {

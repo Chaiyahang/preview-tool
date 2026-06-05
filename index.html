@@ -91,7 +91,10 @@
     </div>
 
     <div class="preview-container hidden" id="preview-lottie">
-      <div id="lottie-player"></div>
+      <div class="lottie-player-wrap" style="flex:1; display:flex; align-items:center; justify-content:center; width:100%; min-height:0; position:relative;">
+        <div id="lottie-player"></div>
+      </div>
+      <div class="img-info-panel" id="lottie-info-panel"></div>
       <div class="float-browse" title="Load new files">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
         <div class="select-menu" id="menu-lottie-float">
@@ -102,7 +105,20 @@
       </div>
     </div>
     <div class="img-preview-container hidden" id="preview-image">
-      <div class="img-preview-wrap"><img id="img-preview-el" src="" alt=""></div>
+      <div class="svg-tabs-container hidden" id="svg-tabs-container">
+        <div class="svg-tabs">
+          <button class="svg-tab-btn active" id="svg-tab-preview">预览</button>
+          <button class="svg-tab-btn" id="svg-tab-code">SVG 代码</button>
+        </div>
+        <div class="svg-code-actions hidden" id="svg-code-actions">
+          <button class="svg-action-btn" id="svg-copy-raw">复制 SVG</button>
+          <button class="svg-action-btn" id="svg-copy-jsx">复制 JSX</button>
+        </div>
+      </div>
+      <div class="img-preview-wrap">
+        <img id="img-preview-el" src="" alt="">
+        <pre class="svg-code-view hidden" id="svg-code-view"></pre>
+      </div>
       <div class="float-browse" title="Load new files">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
         <div class="select-menu" id="menu-image-float">

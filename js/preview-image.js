@@ -2,6 +2,8 @@
 import { parseExifData, parseEXIF, parseGIF, parseWebP, parsePNG, parsePAG, parsePAGAsync, parseHEIF } from './parsers.js';
 import { state, hideAllPreviews } from './main.js';
 
+export var svgCodeText = "";
+
 var previewCallId = 0;
 
 export function infoItem(label, value) { return '<div class="img-info-item"><span class="label">' + label + '</span><span class="value">' + value + '</span></div>'; }
@@ -103,6 +105,21 @@ export async function showImagePreview(filePath) {
   var infoBadge = document.getElementById('info-badge');
   var controls = document.getElementById('controls');
 
+  var svgTabsContainer = document.getElementById('svg-tabs-container');
+  var codeView = document.getElementById('svg-code-view');
+  var actions = document.getElementById('svg-code-actions');
+  var tabPreview = document.getElementById('svg-tab-preview');
+  var tabCode = document.getElementById('svg-tab-code');
+
+  if (svgTabsContainer) {
+    svgTabsContainer.classList.add('hidden');
+    imgPreviewEl.classList.remove('hidden');
+    if (codeView) codeView.classList.add('hidden');
+    if (actions) actions.classList.add('hidden');
+    if (tabPreview) tabPreview.classList.add('active');
+    if (tabCode) tabCode.classList.remove('active');
+  }
+
   hideAllPreviews(); previewImage.classList.remove('hidden'); controls.classList.add('hidden');
   cleanupPAGView();
   var lower = filePath.toLowerCase();
@@ -112,7 +129,22 @@ export async function showImagePreview(filePath) {
   } else if (lower.endsWith('.heic') || lower.endsWith('.heif')) {
     try { var blob = await window.heic2any({ blob: file, toType: 'image/jpeg', quality: 0.92 }); if (previewCallId !== thisCallId) return; imgPreviewEl.src = URL.createObjectURL(blob); }
     catch(e) { imgPreviewEl.src = ''; }
-  } else { imgPreviewEl.src = URL.createObjectURL(file); }
+  } else { 
+    imgPreviewEl.src = URL.createObjectURL(file); 
+    if (lower.endsWith('.svg')) {
+      try {
+        svgCodeText = await file.text();
+        if (codeView) {
+          codeView.textContent = svgCodeText;
+        }
+        if (svgTabsContainer) {
+          svgTabsContainer.classList.remove('hidden');
+        }
+      } catch (e) {
+        console.error('Error loading SVG text:', e);
+      }
+    }
+  }
   if (previewCallId !== thisCallId) return;
   var info = await analyzeImage(file);
   if (previewCallId !== thisCallId) return;
@@ -279,4 +311,81 @@ function initZoom() {
   function applyTransform() { zoomEl.style.transform = 'translate(' + zoomX + 'px,' + zoomY + 'px) scale(' + zoomScale + ')'; }
 }
 
+function svgToJsx(svg) {
+  var clean = svg.replace(/<\?xml[\s\S]*?\?>/g, '').trim();
+  var replacements = {
+    'class=': 'className=',
+    'for=': 'htmlFor=',
+    'stroke-width=': 'strokeWidth=',
+    'stroke-linecap=': 'strokeLinecap=',
+    'stroke-linejoin=': 'strokeLinejoin=',
+    'stroke-miterlimit=': 'strokeMiterlimit=',
+    'stroke-dasharray=': 'strokeDasharray=',
+    'stroke-dashoffset=': 'strokeDashoffset=',
+    'fill-rule=': 'fillRule=',
+    'clip-rule=': 'clipRule=',
+    'stop-color=': 'stopColor=',
+    'stop-opacity=': 'stopOpacity=',
+    'font-family=': 'fontFamily=',
+    'font-size=': 'fontSize=',
+    'font-weight=': 'fontWeight=',
+    'letter-spacing=': 'letterSpacing=',
+    'xmlns:xlink=': 'xmlnsXlink=',
+    'xlink:href=': 'xlinkHref=',
+    'xml:space=': 'xmlSpace='
+  };
+  
+  for (var key in replacements) {
+    var regex = new RegExp(key, 'g');
+    clean = clean.replace(regex, replacements[key]);
+  }
+  return clean;
+}
+
+function initSvgInspector() {
+  var tabPreview = document.getElementById('svg-tab-preview');
+  var tabCode = document.getElementById('svg-tab-code');
+  var btnCopyRaw = document.getElementById('svg-copy-raw');
+  var btnCopyJsx = document.getElementById('svg-copy-jsx');
+  var imgEl = document.getElementById('img-preview-el');
+  var codeView = document.getElementById('svg-code-view');
+  var actions = document.getElementById('svg-code-actions');
+
+  if (!tabPreview) return;
+
+  tabPreview.addEventListener('click', function() {
+    tabPreview.classList.add('active');
+    tabCode.classList.remove('active');
+    imgEl.classList.remove('hidden');
+    codeView.classList.add('hidden');
+    actions.classList.add('hidden');
+  });
+
+  tabCode.addEventListener('click', function() {
+    tabCode.classList.add('active');
+    tabPreview.classList.remove('active');
+    imgEl.classList.add('hidden');
+    codeView.classList.remove('hidden');
+    actions.classList.remove('hidden');
+  });
+
+  btnCopyRaw.addEventListener('click', function() {
+    navigator.clipboard.writeText(svgCodeText).then(function() {
+      var original = btnCopyRaw.textContent;
+      btnCopyRaw.textContent = '已复制！';
+      setTimeout(function() { btnCopyRaw.textContent = original; }, 1500);
+    });
+  });
+
+  btnCopyJsx.addEventListener('click', function() {
+    var jsx = svgToJsx(svgCodeText);
+    navigator.clipboard.writeText(jsx).then(function() {
+      var original = btnCopyJsx.textContent;
+      btnCopyJsx.textContent = '已复制 JSX！';
+      setTimeout(function() { btnCopyJsx.textContent = original; }, 1500);
+    });
+  });
+}
+
 initZoom();
+initSvgInspector();
