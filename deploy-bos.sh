@@ -9,15 +9,17 @@ BUCKET="${BOS_BUCKET:-preview-tool}"
 REGION="${BOS_REGION:-bj}"
 ENDPOINT="https://${BUCKET}.${REGION}.bcebos.com"
 
-if ! command -v bcecmd &>/dev/null; then
+BCECMD="${HOME}/bin/bcecmd"
+
+if ! [ -x "$BCECMD" ]; then
   echo "错误: bcecmd 未安装"
-  echo "安装: brew tap baidubce/tap && brew install bcecmd"
+  echo "安装: 下载 arm64-mac-bcecmd 到 ~/bin/bcecmd"
   exit 1
 fi
 
 echo "正在同步到 BOS: bos:/${BUCKET}/ ..."
 
-bcecmd bos sync . "bos:/${BUCKET}/" \
+$BCECMD bos sync . "bos:/${BUCKET}/" \
   --exclude ".git/*" \
   --exclude ".codegraph/*" \
   --exclude "CLAUDE.md" \

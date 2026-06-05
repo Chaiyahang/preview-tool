@@ -70,13 +70,46 @@ function restoreModeState(mode) {
   }
 }
 
-function switchMode(mode) {
+function applyTransition(direction) {
+  if (!direction) return;
+  var activeContainer = document.querySelector('#canvas-area > div:not(.hidden)');
+  if (activeContainer) {
+    activeContainer.classList.remove('swipe-next-in', 'swipe-prev-in');
+    void activeContainer.offsetWidth; // Force reflow
+    if (direction === 'next') {
+      activeContainer.classList.add('swipe-next-in');
+    } else if (direction === 'prev') {
+      activeContainer.classList.add('swipe-prev-in');
+    }
+  }
+}
+
+function switchMode(mode, direction) {
+  var oldMode = state.currentMode;
+  var oldIdx = TAB_MODES.indexOf(oldMode);
+  var newIdx = TAB_MODES.indexOf(mode);
+
+  if (!direction && oldIdx !== -1 && newIdx !== -1 && oldIdx !== newIdx) {
+    direction = newIdx > oldIdx ? 'next' : 'prev';
+  }
+
   saveCurrentState();
   state.currentMode = mode;
   document.querySelectorAll('.tab-btn').forEach(function(btn, i) {
     btn.classList.toggle('active', TAB_MODES[i] === mode);
   });
+
+  // Scroll active tab into view on mobile
+  var activeBtn = document.querySelectorAll('.tab-btn')[newIdx];
+  if (activeBtn && activeBtn.scrollIntoView) {
+    activeBtn.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+  }
+
   restoreModeState(mode);
+
+  if (direction) {
+    applyTransition(direction);
+  }
 }
 
 function resetAll() {
@@ -299,27 +332,138 @@ if ('serviceWorker' in navigator) {
       var name = (first.name || '').toLowerCase();
       var type = (first.type || '').toLowerCase();
       if (type.startsWith('image/') || /\.(png|jpg|jpeg|webp|gif|svg|heic|heif|avif)$/.test(name)) {
-        switchToMode('image');
+        switchMode('image');
       } else if (type.startsWith('video/') || /\.(mp4|webm|mov|mkv)$/.test(name)) {
-        switchToMode('video');
+        switchMode('video');
       } else if (type.startsWith('audio/') || /\.(mp3|wav|flac|aac|m4a|ogg|wma)$/.test(name)) {
-        switchToMode('audio');
+        switchMode('audio');
       } else if (/\.json$/.test(name) || type === 'application/json') {
-        switchToMode('lottie');
+        switchMode('lottie');
       } else {
-        switchToMode('file');
+        switchMode('file');
       }
       processFiles(e.data.files);
     }
   });
 }
 
-function switchToMode(mode) {
-  var idx = TAB_MODES.indexOf(mode);
-  if (idx === -1) return;
-  var tabs = document.querySelectorAll('.tab-btn');
-  tabs.forEach(function(t, i) { t.classList.toggle('active', i === idx); });
-  saveCurrentState();
-  state.currentMode = mode;
-  restoreModeState(mode);
+function shouldIgnoreSwipe(target) {
+  // 1. Sidebar is open: don't swipe switch
+  var sidebar = document.getElementById('sidebar');
+  if (sidebar && sidebar.classList.contains('open')) {
+    return true;
+  }
+
+  // 2. Zoomed image overlay is active: don't swipe switch
+  var zoomOverlay = document.getElementById('img-zoom-overlay');
+  if (zoomOverlay && zoomOverlay.classList.contains('active')) {
+    return true;
+  }
+
+  // 3. Prevent conflict with interactive elements
+  var current = target;
+  while (current && current !== document.body) {
+    if (current.classList) {
+      if (current.classList.contains('controls') ||
+          current.classList.contains('audio-waveform-wrap') ||
+          current.classList.contains('sidebar') ||
+          current.classList.contains('sidebar-toggle') ||
+          current.classList.contains('sidebar-backdrop') ||
+          current.classList.contains('img-zoom-controls') ||
+          current.classList.contains('speed-select') ||
+          current.classList.contains('bg-control') ||
+          current.classList.contains('file-content') ||
+          current.classList.contains('file-hex') ||
+          current.classList.contains('sqlite-viewer') ||
+          current.classList.contains('tree-item') ||
+          current.tagName === 'AUDIO' ||
+          current.tagName === 'VIDEO' ||
+          current.tagName === 'CANVAS' ||
+          current.tagName === 'IFRAME') {
+        return true;
+      }
+
+      // Check if target is inside an element that has horizontal overflow scrolling
+      if (current.scrollWidth > current.clientWidth &&
+          (window.getComputedStyle(current).overflowX === 'auto' ||
+           window.getComputedStyle(current).overflowX === 'scroll')) {
+        return true;
+      }
+    }
+    current = current.parentElement;
+  }
+  return false;
 }
+
+function initTouchSwiping() {
+  var canvasArea = document.getElementById('canvas-area');
+  if (!canvasArea) return;
+
+  var startX = 0;
+  var startY = 0;
+  var startTime = 0;
+  var isTouchSwiping = false;
+
+  canvasArea.addEventListener('touchstart', function(e) {
+    if (shouldIgnoreSwipe(e.target)) {
+      isTouchSwiping = false;
+      return;
+    }
+    if (e.touches.length !== 1) {
+      isTouchSwiping = false;
+      return;
+    }
+    var touch = e.touches[0];
+    startX = touch.clientX;
+    startY = touch.clientY;
+    startTime = Date.now();
+    isTouchSwiping = true;
+  }, { passive: true });
+
+  canvasArea.addEventListener('touchmove', function(e) {
+    if (!isTouchSwiping) return;
+    if (e.touches.length !== 1) {
+      isTouchSwiping = false;
+      return;
+    }
+  }, { passive: true });
+
+  canvasArea.addEventListener('touchend', function(e) {
+    if (!isTouchSwiping) return;
+    isTouchSwiping = false;
+
+    if (e.changedTouches.length !== 1) return;
+
+    var touch = e.changedTouches[0];
+    var diffX = touch.clientX - startX;
+    var diffY = touch.clientY - startY;
+    var elapsed = Date.now() - startTime;
+
+    var absDiffX = Math.abs(diffX);
+    var absDiffY = Math.abs(diffY);
+
+    // Swipe validation criteria:
+    // - Horizontal displacement of at least 60px
+    // - Horizontal displacement is 1.5x greater than vertical displacement (prevents scrolling conflict)
+    // - Must be a quick swipe (< 400ms) OR large swipe (> 120px)
+    if (absDiffX > 60 && absDiffX > absDiffY * 1.5 && (elapsed < 400 || absDiffX > 120)) {
+      var currentIdx = TAB_MODES.indexOf(state.currentMode);
+      if (currentIdx === -1) return;
+
+      if (diffX < 0) {
+        // Swipe left (finger right to left) -> Next tab
+        if (currentIdx < TAB_MODES.length - 1) {
+          switchMode(TAB_MODES[currentIdx + 1], 'next');
+        }
+      } else {
+        // Swipe right (finger left to right) -> Previous tab
+        if (currentIdx > 0) {
+          switchMode(TAB_MODES[currentIdx - 1], 'prev');
+        }
+      }
+    }
+  }, { passive: true });
+}
+
+// Initialize touch swipe switching
+initTouchSwiping();
