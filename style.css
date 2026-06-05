@@ -694,6 +694,10 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--t
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  background-color: #0f172a;
+  background-image: linear-gradient(rgba(148,163,184,0.06) 1px, transparent 1px),
+                    linear-gradient(90deg, rgba(148,163,184,0.06) 1px, transparent 1px);
+  background-size: 20px 20px;
 }
 .font-preview-container.hidden {
   display: none;
