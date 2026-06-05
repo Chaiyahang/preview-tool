@@ -125,6 +125,14 @@
         </div>
       </div>
       <div class="img-preview-wrap">
+        <div class="img-toolbar" id="img-toolbar">
+          <button class="img-tool-btn" id="btn-color-picker" title="颜色吸管 (P)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M20.62 3.38a5 5 0 0 0-7.07 0L10 6.92l-5.66 5.66a2 2 0 0 0-.5 1l-1 5a1 1 0 0 0 1.18 1.18l5-1a2 2 0 0 0 1-.5L15.66 12.6l3.54-3.54a5 5 0 0 0 0-7.07z"></path>
+              <path d="m14 8 2 2"></path>
+            </svg>
+          </button>
+        </div>
         <img id="img-preview-el" src="" alt="">
         <pre class="svg-code-view hidden" id="svg-code-view"></pre>
       </div>
@@ -212,7 +220,11 @@
       <div class="img-info-panel" id="video-info-panel"></div>
     </div>
     <div class="audio-preview-container hidden" id="preview-audio">
-      <div class="audio-waveform-wrap"><canvas id="audio-waveform"></canvas></div>
+      <div class="audio-waveform-wrap" style="position: relative;">
+        <canvas id="audio-waveform"></canvas>
+        <div class="audio-progress-overlay" id="audio-progress-overlay"></div>
+        <div class="audio-playhead-line" id="audio-playhead-line"></div>
+      </div>
       <audio id="audio-player" controls preload="metadata"></audio>
       <div class="float-browse" title="Load new files">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
@@ -284,6 +296,7 @@
 
 <div class="img-zoom-overlay" id="img-zoom-overlay">
   <img id="img-zoom-el" src="">
+  <div id="img-zoom-grid-overlay"></div>
   <button class="img-zoom-close" id="img-zoom-close">&times;</button>
   <div class="img-zoom-controls">
     <button id="zoom-out">−</button>
@@ -291,6 +304,11 @@
     <button id="zoom-in">+</button>
     <button id="zoom-fit">Fit</button>
   </div>
+</div>
+
+<div class="image-magnifier hidden" id="image-magnifier">
+  <canvas id="magnifier-canvas" width="132" height="132"></canvas>
+  <div id="magnifier-color-text">#FFFFFF</div>
 </div>
 
 <script type="module" src="js/main.js"></script>

@@ -56,17 +56,15 @@ function drawWaveform(canvas, buffer) {
 }
 
 function drawPlayhead(canvas, ratio) {
-  var ctx = canvas.getContext('2d');
-  var w = canvas.width, h = canvas.height;
-  var x = ratio * w;
-  ctx.clearRect(0, 0, w, h);
-  if (audioBuffer) drawWaveform(canvas, audioBuffer);
-  ctx.strokeStyle = '#F8FAFC';
-  ctx.lineWidth = 2;
-  ctx.beginPath();
-  ctx.moveTo(x, 0);
-  ctx.lineTo(x, h);
-  ctx.stroke();
+  var playhead = document.getElementById('audio-playhead-line');
+  var progress = document.getElementById('audio-progress-overlay');
+  var width = canvas ? canvas.offsetWidth : 0;
+  if (playhead) {
+    playhead.style.transform = 'translateX(' + (ratio * width) + 'px)';
+  }
+  if (progress) {
+    progress.style.width = (ratio * 100) + '%';
+  }
 }
 
 function updatePlayhead() {
@@ -127,7 +125,10 @@ function buildControls() {
     abLoop.a = audio.currentTime;
     abLoop.active = (abLoop.a !== null && abLoop.b !== null);
     updateABButtons();
-    if (audioBuffer) drawPlayhead(document.getElementById('audio-waveform'), audio.currentTime / audio.duration);
+    if (audioBuffer) {
+      drawWaveform(document.getElementById('audio-waveform'), audioBuffer);
+      drawPlayhead(document.getElementById('audio-waveform'), audio.currentTime / audio.duration);
+    }
   });
   document.getElementById('audio-ab-b').addEventListener('click', function() {
     var audio = document.getElementById('audio-player');
@@ -135,13 +136,19 @@ function buildControls() {
     if (abLoop.a !== null && abLoop.b < abLoop.a) { var tmp = abLoop.a; abLoop.a = abLoop.b; abLoop.b = tmp; }
     abLoop.active = (abLoop.a !== null && abLoop.b !== null);
     updateABButtons();
-    if (audioBuffer) drawPlayhead(document.getElementById('audio-waveform'), audio.currentTime / audio.duration);
+    if (audioBuffer) {
+      drawWaveform(document.getElementById('audio-waveform'), audioBuffer);
+      drawPlayhead(document.getElementById('audio-waveform'), audio.currentTime / audio.duration);
+    }
   });
   document.getElementById('audio-ab-clear').addEventListener('click', function() {
     abLoop.a = null; abLoop.b = null; abLoop.active = false;
     updateABButtons();
     var audio = document.getElementById('audio-player');
-    if (audioBuffer && audio.duration) drawPlayhead(document.getElementById('audio-waveform'), audio.currentTime / audio.duration);
+    if (audioBuffer) {
+      drawWaveform(document.getElementById('audio-waveform'), audioBuffer);
+      if (audio.duration) drawPlayhead(document.getElementById('audio-waveform'), audio.currentTime / audio.duration);
+    }
   });
 }
 
@@ -222,11 +229,11 @@ export async function showAudioPreview(filePath) {
   audioPlayer.onplay = function() { updatePlayhead(); };
   audioPlayer.onpause = function() { cancelAnimationFrame(waveformRAF); };
   audioPlayer.onseeked = function() { if (audioBuffer) drawPlayhead(canvas, audioPlayer.currentTime / audioPlayer.duration); };
-  canvas.onclick = function(e) {
+  
+  canvas.onmousedown = function(e) {
     if (!audioPlayer.duration) return;
-    var r = canvas.getBoundingClientRect();
-    audioPlayer.currentTime = ((e.clientX - r.left) / r.width) * audioPlayer.duration;
-    if (audioBuffer) drawPlayhead(canvas, audioPlayer.currentTime / audioPlayer.duration);
+    isSeeking = true;
+    handleSeek(e);
   };
 }
 
@@ -234,8 +241,33 @@ export function cleanupAudio() {
   cancelAnimationFrame(waveformRAF);
   audioBuffer = null;
   abLoop.a = null; abLoop.b = null; abLoop.active = false;
+  isSeeking = false;
   var audioPlayer = document.getElementById('audio-player');
   if (audioPlayer) { audioPlayer.pause(); audioPlayer.src = ''; }
   var ctrl = document.getElementById('audio-controls');
   if (ctrl) ctrl.remove();
 }
+
+var isSeeking = false;
+function handleSeek(e) {
+  var audioPlayer = document.getElementById('audio-player');
+  var canvas = document.getElementById('audio-waveform');
+  if (!audioPlayer || !canvas || !audioPlayer.duration || !audioBuffer) return;
+
+  var r = canvas.getBoundingClientRect();
+  var ratio = (e.clientX - r.left) / r.width;
+  ratio = Math.max(0, Math.min(1, ratio));
+
+  audioPlayer.currentTime = ratio * audioPlayer.duration;
+  drawPlayhead(canvas, ratio);
+}
+
+window.addEventListener('mousemove', function(e) {
+  if (isSeeking) {
+    handleSeek(e);
+  }
+});
+
+window.addEventListener('mouseup', function() {
+  isSeeking = false;
+});

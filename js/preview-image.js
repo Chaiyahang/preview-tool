@@ -91,6 +91,10 @@ export async function analyzeImage(file) {
 }
 
 export async function showImagePreview(filePath) {
+  offscreenCanvas = null;
+  offscreenCtx = null;
+  disableColorPicker();
+
   var thisCallId = ++previewCallId;
   var currentMode = state.currentMode;
   var fileMap = state.fileMap;
@@ -297,6 +301,15 @@ function initZoom() {
     zoomScale = 1; zoomX = 0; zoomY = 0;
     overlay.classList.add('active');
     zoomLevel.textContent = '100%';
+    
+    var grid = document.getElementById('img-zoom-grid-overlay');
+    if (grid) {
+      grid.classList.remove('active');
+      setTimeout(function() {
+        grid.style.width = zoomEl.naturalWidth + 'px';
+        grid.style.height = zoomEl.naturalHeight + 'px';
+      }, 50);
+    }
     applyTransform();
   }
 
@@ -305,10 +318,29 @@ function initZoom() {
   function setZoom(s) {
     zoomScale = Math.max(0.1, Math.min(20, s));
     zoomLevel.textContent = Math.round(zoomScale * 100) + '%';
+    
+    var grid = document.getElementById('img-zoom-grid-overlay');
+    if (grid) {
+      if (zoomScale >= 5) {
+        grid.classList.add('active');
+        grid.style.backgroundSize = zoomScale + 'px ' + zoomScale + 'px';
+        grid.style.width = zoomEl.naturalWidth + 'px';
+        grid.style.height = zoomEl.naturalHeight + 'px';
+      } else {
+        grid.classList.remove('active');
+      }
+    }
     applyTransform();
   }
 
-  function applyTransform() { zoomEl.style.transform = 'translate(' + zoomX + 'px,' + zoomY + 'px) scale(' + zoomScale + ')'; }
+  function applyTransform() {
+    var transformStr = 'translate(' + zoomX + 'px,' + zoomY + 'px) scale(' + zoomScale + ')';
+    zoomEl.style.transform = transformStr;
+    var grid = document.getElementById('img-zoom-grid-overlay');
+    if (grid) {
+      grid.style.transform = transformStr;
+    }
+  }
 }
 
 function svgToJsx(svg) {
@@ -389,3 +421,223 @@ function initSvgInspector() {
 
 initZoom();
 initSvgInspector();
+
+var isColorPickerActive = false;
+var offscreenCanvas = null;
+var offscreenCtx = null;
+
+var magnifier = null;
+var magnifierCanvas = null;
+var magnifierCtx = null;
+var magnifierText = null;
+
+export function disableColorPicker() {
+  isColorPickerActive = false;
+  var btn = document.getElementById('btn-color-picker');
+  if (btn) btn.classList.remove('active');
+  var container = document.getElementById('preview-image');
+  if (container) container.classList.remove('eye-dropper-active');
+  if (magnifier) magnifier.classList.remove('visible');
+}
+
+export function enableColorPicker() {
+  isColorPickerActive = true;
+  var btn = document.getElementById('btn-color-picker');
+  if (btn) btn.classList.add('active');
+  var container = document.getElementById('preview-image');
+  if (container) container.classList.add('eye-dropper-active');
+  ensureOffscreenBuffer();
+}
+
+function toggleColorPicker() {
+  if (isColorPickerActive) {
+    disableColorPicker();
+  } else {
+    enableColorPicker();
+  }
+}
+
+function ensureOffscreenBuffer() {
+  if (offscreenCanvas) return;
+  var activeEl = document.getElementById('pag-canvas') || document.getElementById('img-preview-el');
+  if (!activeEl) return;
+
+  offscreenCanvas = document.createElement('canvas');
+  offscreenCtx = offscreenCanvas.getContext('2d');
+
+  if (activeEl.tagName.toLowerCase() === 'canvas') {
+    offscreenCanvas.width = activeEl.width;
+    offscreenCanvas.height = activeEl.height;
+    offscreenCtx.drawImage(activeEl, 0, 0);
+  } else {
+    offscreenCanvas.width = activeEl.naturalWidth || activeEl.width || 1;
+    offscreenCanvas.height = activeEl.naturalHeight || activeEl.height || 1;
+    offscreenCtx.drawImage(activeEl, 0, 0);
+  }
+}
+
+function handleMouseMove(e) {
+  if (!isColorPickerActive) return;
+  var activeEl = document.getElementById('pag-canvas') || document.getElementById('img-preview-el');
+  if (!activeEl) return;
+
+  ensureOffscreenBuffer();
+  if (!offscreenCanvas || offscreenCanvas.width === 0) return;
+
+  var rect = activeEl.getBoundingClientRect();
+  if (e.clientX < rect.left || e.clientX > rect.right || e.clientY < rect.top || e.clientY > rect.bottom) {
+    if (magnifier) magnifier.classList.remove('visible');
+    return;
+  }
+
+  var x = e.clientX - rect.left;
+  var y = e.clientY - rect.top;
+
+  var pixelX = Math.floor((x / rect.width) * offscreenCanvas.width);
+  var pixelY = Math.floor((y / rect.height) * offscreenCanvas.height);
+
+  pixelX = Math.max(0, Math.min(offscreenCanvas.width - 1, pixelX));
+  pixelY = Math.max(0, Math.min(offscreenCanvas.height - 1, pixelY));
+
+  var rgba = offscreenCtx.getImageData(pixelX, pixelY, 1, 1).data;
+  var hex = rgbToHex(rgba[0], rgba[1], rgba[2]);
+
+  if (magnifierCtx) {
+    magnifierCtx.fillStyle = '#0f172a';
+    magnifierCtx.fillRect(0, 0, 132, 132);
+    magnifierCtx.imageSmoothingEnabled = false;
+
+    var srcX = pixelX - 5;
+    var srcY = pixelY - 5;
+
+    var sX = Math.max(0, srcX);
+    var sY = Math.max(0, srcY);
+    var sW = 11 - (sX - srcX);
+    var sH = 11 - (sY - srcY);
+
+    var dX = (sX - srcX) * 12;
+    var dY = (sY - srcY) * 12;
+    var dW = sW * 12;
+    var dH = sH * 12;
+
+    if (sX + sW > offscreenCanvas.width) {
+      var diffW = (sX + sW) - offscreenCanvas.width;
+      sW -= diffW;
+      dW -= diffW * 12;
+    }
+    if (sY + sH > offscreenCanvas.height) {
+      var diffH = (sY + sH) - offscreenCanvas.height;
+      sH -= diffH;
+      dH -= diffH * 12;
+    }
+
+    if (sW > 0 && sH > 0) {
+      magnifierCtx.drawImage(offscreenCanvas, sX, sY, sW, sH, dX, dY, dW, dH);
+    }
+
+    magnifierCtx.strokeStyle = 'rgba(255, 255, 255, 0.8)';
+    magnifierCtx.lineWidth = 1.5;
+    magnifierCtx.strokeRect(60, 60, 12, 12);
+
+    magnifierCtx.strokeStyle = 'rgba(0, 0, 0, 0.8)';
+    magnifierCtx.lineWidth = 0.8;
+    magnifierCtx.strokeRect(61, 61, 10, 10);
+  }
+
+  if (magnifier) {
+    magnifier.classList.add('visible');
+    var magX = e.clientX + 16;
+    var magY = e.clientY + 16;
+    if (magX + 150 > window.innerWidth) magX = e.clientX - 156;
+    if (magY + 180 > window.innerHeight) magY = e.clientY - 186;
+
+    magnifier.style.left = magX + 'px';
+    magnifier.style.top = magY + 'px';
+
+    if (magnifierText) magnifierText.textContent = hex.toUpperCase();
+    magnifier.style.boxShadow = '0 8px 32px rgba(0, 0, 0, 0.5), 0 0 16px ' + hex + '66';
+    magnifier.style.borderColor = hex;
+  }
+}
+
+function handleMouseLeave() {
+  if (magnifier) magnifier.classList.remove('visible');
+}
+
+function handleImageClick(e) {
+  if (!isColorPickerActive) return;
+  var activeEl = document.getElementById('pag-canvas') || document.getElementById('img-preview-el');
+  if (!activeEl) return;
+
+  var rect = activeEl.getBoundingClientRect();
+  if (e.clientX < rect.left || e.clientX > rect.right || e.clientY < rect.top || e.clientY > rect.bottom) {
+    return;
+  }
+
+  e.preventDefault();
+  e.stopPropagation();
+
+  ensureOffscreenBuffer();
+  if (!offscreenCanvas || offscreenCanvas.width === 0) return;
+
+  var x = e.clientX - rect.left;
+  var y = e.clientY - rect.top;
+  var pixelX = Math.floor((x / rect.width) * offscreenCanvas.width);
+  var pixelY = Math.floor((y / rect.height) * offscreenCanvas.height);
+
+  pixelX = Math.max(0, Math.min(offscreenCanvas.width - 1, pixelX));
+  pixelY = Math.max(0, Math.min(offscreenCanvas.height - 1, pixelY));
+
+  var rgba = offscreenCtx.getImageData(pixelX, pixelY, 1, 1).data;
+  var hex = rgbToHex(rgba[0], rgba[1], rgba[2]).toUpperCase();
+
+  navigator.clipboard.writeText(hex).then(function() {
+    var toast = document.createElement('div');
+    toast.className = 'color-toast';
+    toast.style.cssText = 'position:fixed; bottom:80px; left:50%; transform:translateX(-50%); background:var(--accent); color:#fff; padding:8px 16px; border-radius:8px; font-size:12px; z-index:9999; box-shadow:0 4px 12px rgba(0,0,0,0.3); font-family:monospace; pointer-events:none; transition:opacity 0.2s;';
+    toast.textContent = '已复制颜色: ' + hex;
+    document.body.appendChild(toast);
+    setTimeout(function() {
+      toast.style.opacity = '0';
+      setTimeout(function() { toast.remove(); }, 200);
+    }, 1500);
+  });
+}
+
+function rgbToHex(r, g, b) {
+  return "#" + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1);
+}
+
+function initColorPicker() {
+  var wrap = document.querySelector('.img-preview-wrap');
+  var btn = document.getElementById('btn-color-picker');
+  magnifier = document.getElementById('image-magnifier');
+  if (magnifier) {
+    magnifierCanvas = document.getElementById('magnifier-canvas');
+    magnifierCtx = magnifierCanvas.getContext('2d');
+    magnifierText = document.getElementById('magnifier-color-text');
+  }
+
+  if (btn) {
+    btn.addEventListener('click', function(e) {
+      e.stopPropagation();
+      toggleColorPicker();
+    });
+  }
+
+  window.addEventListener('keydown', function(e) {
+    if (state.currentMode === 'image' && (e.key === 'p' || e.key === 'P')) {
+      if (document.activeElement.tagName.toLowerCase() !== 'textarea' && document.activeElement.tagName.toLowerCase() !== 'input') {
+        toggleColorPicker();
+      }
+    }
+  });
+
+  if (wrap) {
+    wrap.addEventListener('mousemove', handleMouseMove);
+    wrap.addEventListener('mouseleave', handleMouseLeave);
+    wrap.addEventListener('click', handleImageClick, true);
+  }
+}
+
+initColorPicker();
