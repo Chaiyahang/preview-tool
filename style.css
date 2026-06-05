@@ -409,6 +409,8 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--t
   border: 1px solid var(--border);
 }
 
+.svg-tabs-container.hidden,.svg-code-view.hidden,.svg-code-actions.hidden{display:none}
+
 /* Lottie Player styling */
 #preview-lottie{background-color:#0f172a;background-image:linear-gradient(rgba(148,163,184,0.08) 1px,transparent 1px),linear-gradient(90deg,rgba(148,163,184,0.08) 1px,transparent 1px);background-size:20px 20px}
 #lottie-player{width:80%;height:80%;max-width:560px;max-height:560px;border-radius:16px}
