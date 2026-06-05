@@ -478,15 +478,18 @@ function initTouchSwiping() {
     var absX = Math.abs(e.deltaX);
     var absY = Math.abs(e.deltaY);
 
+    // If horizontal scroll is dominant, immediately prevent browser history swipe gesture.
+    // We must do this even for very small deltaX (like deltaX < 2) to stop the browser from initiating it.
+    if (absX > absY) {
+      e.preventDefault();
+    }
+
     if (absX < 2) return; // Ignore micro-scrolls (noise)
 
     if (absX < absY * 1.5) {
       accumulatedDeltaX = 0;
       return;
     }
-
-    // Prevent default browser back/forward history navigation gesture
-    e.preventDefault();
 
     if (isSwipeLocked) return;
 
