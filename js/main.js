@@ -463,6 +463,66 @@ function initTouchSwiping() {
       }
     }
   }, { passive: true });
+
+  // --- Trackpad Swipe Detection ---
+  var accumulatedDeltaX = 0;
+  var isSwipeLocked = false;
+  var swipeLockTimeout = null;
+
+  canvasArea.addEventListener('wheel', function(e) {
+    if (shouldIgnoreSwipe(e.target)) {
+      accumulatedDeltaX = 0;
+      return;
+    }
+
+    var absX = Math.abs(e.deltaX);
+    var absY = Math.abs(e.deltaY);
+
+    if (absX < 2) return; // Ignore micro-scrolls (noise)
+
+    if (absX < absY * 1.5) {
+      accumulatedDeltaX = 0;
+      return;
+    }
+
+    // Prevent default browser back/forward history navigation gesture
+    e.preventDefault();
+
+    if (isSwipeLocked) return;
+
+    accumulatedDeltaX += e.deltaX;
+
+    var threshold = 120; // Accumulation threshold (px)
+    if (Math.abs(accumulatedDeltaX) >= threshold) {
+      var currentIdx = TAB_MODES.indexOf(state.currentMode);
+      if (currentIdx === -1) return;
+
+      var didSwitch = false;
+
+      if (accumulatedDeltaX > 0) {
+        if (currentIdx < TAB_MODES.length - 1) {
+          switchMode(TAB_MODES[currentIdx + 1], 'next');
+          didSwitch = true;
+        }
+      } else {
+        if (currentIdx > 0) {
+          switchMode(TAB_MODES[currentIdx - 1], 'prev');
+          didSwitch = true;
+        }
+      }
+
+      if (didSwitch) {
+        isSwipeLocked = true;
+        accumulatedDeltaX = 0;
+        if (swipeLockTimeout) clearTimeout(swipeLockTimeout);
+        swipeLockTimeout = setTimeout(function() {
+          isSwipeLocked = false;
+        }, 500);
+      } else {
+        accumulatedDeltaX = 0;
+      }
+    }
+  }, { passive: false });
 }
 
 // Initialize touch swipe switching
