@@ -1,11 +1,12 @@
 // file-handler.js — Drag-drop, file inputs, ZIP, processEntries, buildTree, autoStart, menus
-import { state, hideAllPreviews } from './main.js';
+import { state, hideAllPreviews, dismissHistoryBar } from './main.js';
 import { showImagePreview } from './preview-image.js';
 import { playJson } from './preview-lottie.js';
 import { showVideoPreview } from './preview-video.js';
 import { showAudioPreview } from './preview-audio.js';
 import { showFontPreview } from './preview-font.js';
 import { showFilePreview } from './preview-file.js';
+import { saveCurrentProjectToHistory, updateActiveFileInHistory } from './history-manager.js';
 
 var HIDDEN_FILES = ['.DS_Store', 'Thumbs.db', '.gitkeep', '__MACOSX'];
 var IMG_EXTS = ['.png', '.jpg', '.jpeg', '.webp', '.gif', '.apng', '.pag', '.svg', '.heic', '.heif', '.avif', '.tiff', '.tif'];
@@ -77,6 +78,10 @@ async function processZip(zipFile) {
 }
 
 export async function processEntries(entries) {
+  dismissHistoryBar();
+  if (entries.length > 0) {
+    state.projectName = entries[0].name + (entries.length > 1 ? ' 等 ' + entries.length + ' 个项目' : '');
+  }
   var fileMap = state.fileMap;
   fileMap.clear();
   for (var i = 0; i < entries.length; i++) await readEntry(entries[i], '');
@@ -86,6 +91,17 @@ export async function processEntries(entries) {
 }
 
 export async function processFiles(files) {
+  dismissHistoryBar();
+  if (files.length === 1 && files[0].name.endsWith('.zip')) {
+    state.projectName = files[0].name;
+  } else if (files.length > 0) {
+    var firstFile = files[0];
+    if (firstFile.webkitRelativePath) {
+      state.projectName = firstFile.webkitRelativePath.split('/')[0];
+    } else {
+      state.projectName = firstFile.name + (files.length > 1 ? ' 等 ' + files.length + ' 个文件' : '');
+    }
+  }
   var fileMap = state.fileMap;
   fileMap.clear();
   if (files.length === 1 && files[0].name.endsWith('.zip')) { await processZip(files[0]); }
@@ -150,12 +166,19 @@ function renderTreeNode(node, depth, prefix, fileTree) {
     if (!isDir) { div.style.color = isVid ? 'var(--pink)' : (isAud ? 'var(--amber)' : (isFont ? 'var(--accent)' : (!isJson && !isImg ? 'var(--amber)' : ''))); }
     div.innerHTML = indent + '<span class="tree-icon ' + iconClass + '">' + iconText + '</span><span class="tree-name">' + key + '</span>';
     div.title = fullPath;
-    if (!isDir && isJson) { div.addEventListener('click', currentMode === 'lottie' ? (function(fp) { return function() { playJson(fp); }; })(fullPath) : (function(fp) { return function() { showFilePreview(fp); }; })(fullPath)); }
-    else if (!isDir && isImg) div.addEventListener('click', (function(fp) { return function() { showImagePreview(fp); }; })(fullPath));
-    else if (!isDir && isVid) div.addEventListener('click', (function(fp) { return function() { showVideoPreview(fp); }; })(fullPath));
-    else if (!isDir && isAud) div.addEventListener('click', (function(fp) { return function() { showAudioPreview(fp); }; })(fullPath));
-    else if (!isDir && isFont) div.addEventListener('click', (function(fp) { return function() { showFontPreview(state.fileMap.get(fp)); }; })(fullPath));
-    else if (!isDir && !isJson) div.addEventListener('click', (function(fp) { return function() { showFilePreview(fp); }; })(fullPath));
+    
+    if (!isDir && isJson) { 
+      div.addEventListener('click', currentMode === 'lottie' ? 
+        (function(fp) { return function() { playJson(fp); updateActiveFileInHistory(fp); }; })(fullPath) : 
+        (function(fp) { return function() { showFilePreview(fp); updateActiveFileInHistory(fp); }; })(fullPath)
+      ); 
+    }
+    else if (!isDir && isImg) div.addEventListener('click', (function(fp) { return function() { showImagePreview(fp); updateActiveFileInHistory(fp); }; })(fullPath));
+    else if (!isDir && isVid) div.addEventListener('click', (function(fp) { return function() { showVideoPreview(fp); updateActiveFileInHistory(fp); }; })(fullPath));
+    else if (!isDir && isAud) div.addEventListener('click', (function(fp) { return function() { showAudioPreview(fp); updateActiveFileInHistory(fp); }; })(fullPath));
+    else if (!isDir && isFont) div.addEventListener('click', (function(fp) { return function() { showFontPreview(state.fileMap.get(fp)); updateActiveFileInHistory(fp); }; })(fullPath));
+    else if (!isDir && !isJson) div.addEventListener('click', (function(fp) { return function() { showFilePreview(fp); updateActiveFileInHistory(fp); }; })(fullPath));
+    
     fileTree.appendChild(div);
     if (isDir) renderTreeNode(node[key], depth + 1, fullPath, fileTree);
   });
@@ -167,10 +190,22 @@ export function autoStart() {
   var currentMode = state.currentMode;
   modeState[currentMode].fileMap = new Map(fileMap);
   modeState[currentMode].hasContent = true;
-  if (currentMode === 'lottie') { modeState[currentMode].animGroups = state.animGroups.slice(); if (state.animGroups.length > 0) playJson(state.animGroups[0].jsonPath); }
-  else if (currentMode === 'image') { var firstImg = Array.from(fileMap.keys()).find(function(p) { return isImageFile(p); }); if (firstImg) showImagePreview(firstImg); }
-  else if (currentMode === 'video') { var firstVid = Array.from(fileMap.keys()).find(function(p) { return isVideoFile(p); }); if (firstVid) showVideoPreview(firstVid); }
-  else if (currentMode === 'audio') { var firstAud = Array.from(fileMap.keys()).find(function(p) { return isAudioFile(p); }); if (firstAud) showAudioPreview(firstAud); }
-  else if (currentMode === 'font') { var firstFont = Array.from(fileMap.keys()).find(function(p) { return isFontFile(p); }); if (firstFont) showFontPreview(fileMap.get(firstFont)); }
-  else { var firstFile = Array.from(fileMap.keys()).find(function(p) { return true; }); if (firstFile) showFilePreview(firstFile); }
+
+  var activeFile = null;
+  if (currentMode === 'lottie') { 
+    modeState[currentMode].animGroups = state.animGroups.slice(); 
+    if (state.animGroups.length > 0) {
+      playJson(state.animGroups[0].jsonPath); 
+      activeFile = state.animGroups[0].jsonPath;
+    } 
+  }
+  else if (currentMode === 'image') { var firstImg = Array.from(fileMap.keys()).find(function(p) { return isImageFile(p); }); if (firstImg) { showImagePreview(firstImg); activeFile = firstImg; } }
+  else if (currentMode === 'video') { var firstVid = Array.from(fileMap.keys()).find(function(p) { return isVideoFile(p); }); if (firstVid) { showVideoPreview(firstVid); activeFile = firstVid; } }
+  else if (currentMode === 'audio') { var firstAud = Array.from(fileMap.keys()).find(function(p) { return isAudioFile(p); }); if (firstAud) { showAudioPreview(firstAud); activeFile = firstAud; } }
+  else if (currentMode === 'font') { var firstFont = Array.from(fileMap.keys()).find(function(p) { return isFontFile(p); }); if (firstFont) { showFontPreview(fileMap.get(firstFont)); activeFile = firstFont; } }
+  else { var firstFile = Array.from(fileMap.keys()).find(function(p) { return true; }); if (firstFile) { showFilePreview(firstFile); activeFile = firstFile; } }
+
+  if (state.projectName) {
+    saveCurrentProjectToHistory(state.projectName, fileMap, currentMode, activeFile);
+  }
 }

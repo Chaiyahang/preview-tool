@@ -6,10 +6,12 @@ import { showAudioPreview, cleanupAudio } from './preview-audio.js';
 import { showFilePreview } from './preview-file.js';
 import { showFontPreview, cleanupFontPreview } from './preview-font.js';
 import { processEntries, processFiles, buildTree, getActiveDropZone, toggleMenu, closeMenu, isImageFile, isVideoFile, isAudioFile } from './file-handler.js';
+import { checkLastProjectHistory, restoreProjectFromHistory, deleteProjectHistory } from './history-manager.js';
 
 // Shared state — exported for other modules to import
 export var state = {
   currentMode: 'lottie',
+  projectName: '',
   anim: null,
   isPlaying: false,
   isLooping: true,
@@ -570,3 +572,42 @@ function initSidebarFilter() {
 }
 
 initSidebarFilter();
+
+async function initHistoryRestoreBar() {
+  var bar = document.getElementById('history-restore-bar');
+  var nameEl = document.getElementById('history-project-name');
+  var btnRestore = document.getElementById('btn-history-restore');
+  var btnDismiss = document.getElementById('btn-history-dismiss');
+
+  if (!bar || !nameEl || !btnRestore || !btnDismiss) return;
+
+  var lastProj = await checkLastProjectHistory();
+  if (lastProj) {
+    nameEl.textContent = lastProj.name;
+    var minutesAgo = Math.round((Date.now() - lastProj.timestamp) / 60000);
+    var timeStr = minutesAgo < 1 ? '刚刚' : (minutesAgo < 60 ? minutesAgo + '分钟前' : Math.round(minutesAgo/60) + '小时前');
+    nameEl.title = '保存于 ' + timeStr;
+    bar.classList.remove('hidden');
+
+    btnRestore.onclick = async function() {
+      bar.classList.add('hidden');
+      try {
+        await restoreProjectFromHistory(lastProj.id);
+      } catch(e) {
+        alert('恢复失败: ' + e.message);
+      }
+    };
+
+    btnDismiss.onclick = function() {
+      bar.classList.add('hidden');
+      deleteProjectHistory(lastProj.id);
+    };
+  }
+}
+
+export function dismissHistoryBar() {
+  var bar = document.getElementById('history-restore-bar');
+  if (bar) bar.classList.add('hidden');
+}
+
+initHistoryRestoreBar();
