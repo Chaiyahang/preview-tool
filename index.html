@@ -316,15 +316,27 @@
 </div>
 
 <div class="controls hidden" id="controls">
-  <button class="ctrl-btn" id="btn-play" title="Play / Pause">&#9654;</button>
-  <button class="ctrl-btn" id="btn-stop" title="Stop">&#9632;</button>
+  <button class="ctrl-btn" id="btn-prev-frame" title="上一帧 (←)">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px"><polygon points="19 20 9 12 19 4 19 20"/><line x1="5" y1="19" x2="5" y2="5"/></svg>
+  </button>
+  <button class="ctrl-btn" id="btn-play" title="播放 / 暂停 (Space)">&#9654;</button>
+  <button class="ctrl-btn" id="btn-stop" title="停止">&#9632;</button>
+  <button class="ctrl-btn" id="btn-next-frame" title="下一帧 (→)">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px"><polygon points="5 4 15 12 5 20 5 4"/><line x1="19" y1="5" x2="19" y2="19"/></svg>
+  </button>
   <div class="progress-wrap">
     <div class="progress-bar" id="progress-bar">
+      <div class="progress-loop-range hidden" id="progress-loop-range"></div>
       <div class="progress-fill" id="progress-fill"></div>
     </div>
     <div class="progress-time" id="progress-time">0 / 0</div>
   </div>
   <button class="ctrl-btn" id="btn-loop" title="Toggle loop">&#10227;</button>
+  <div class="lottie-ab-group" id="lottie-ab-group">
+    <button class="ab-btn" id="btn-ab-a" title="设置 A 点 (循环起点)">A</button>
+    <button class="ab-btn" id="btn-ab-b" title="设置 B 点 (循环终点)">B</button>
+    <button class="ab-btn ab-btn-clear" id="btn-ab-clear" title="清除 A-B 循环">&times;</button>
+  </div>
   <select class="speed-select">
     <option value="0.25">0.25x</option>
     <option value="0.5">0.5x</option>

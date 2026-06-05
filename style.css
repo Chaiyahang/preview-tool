@@ -775,4 +775,64 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--t
   border-color: var(--text-secondary);
 }
 
+/* Lottie A-B loop and progress styles */
+.progress-loop-range {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  background: rgba(251, 191, 36, 0.25);
+  border-left: 1px solid var(--amber);
+  border-right: 1px solid var(--amber);
+  z-index: 1;
+}
+.progress-fill {
+  z-index: 2; /* keep fill on top or below, actually keep it below or translucent, let's keep fill on top but semi-translucent or standard */
+  position: relative;
+}
+.lottie-ab-group {
+  display: flex;
+  align-items: center;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 2px;
+  gap: 2px;
+  flex-shrink: 0;
+}
+.ab-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-secondary);
+  font-size: 10px;
+  font-weight: 600;
+  width: 38px;
+  height: 22px;
+  border-radius: 4px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+  font-family: 'JetBrains Mono', monospace;
+}
+.ab-btn:hover {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text);
+}
+.ab-btn.active {
+  background: var(--amber);
+  color: #0F172A;
+  box-shadow: 0 0 6px rgba(251, 191, 36, 0.4);
+}
+.ab-btn-clear {
+  color: var(--text-muted);
+  font-size: 12px;
+  width: 22px;
+}
+.ab-btn-clear:hover {
+  color: var(--destructive) !important;
+  background: rgba(239, 68, 68, 0.1) !important;
+}
+
+
 

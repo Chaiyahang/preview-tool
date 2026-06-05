@@ -2,6 +2,9 @@
 import { state, hideAllPreviews } from './main.js';
 import { infoItem } from './preview-image.js';
 
+export var lottieABLoop = { a: null, b: null, active: false };
+var isScrubbing = false;
+
 function fileToDataUrl(file) { return new Promise(function(r) { var rd = new FileReader(); rd.onload = function() { r(rd.result); }; rd.readAsDataURL(file); }); }
 
 function countLottieLayers(layers) {
@@ -54,6 +57,12 @@ export async function playJson(jsonPath) {
   var fps = animData.fr || 30;
   infoBadge.style.display = '';
   infoBadge.textContent = Math.round(state.anim.totalFrames) + ' frames  ·  ' + fps + ' fps  ·  ' + (state.anim.totalFrames / fps).toFixed(1) + 's';
+  // Reset Lottie A-B loop
+  lottieABLoop.a = null;
+  lottieABLoop.b = null;
+  lottieABLoop.active = false;
+  updateLottieABUI();
+
   updateProgress();
 
   // Populate Lottie Diagnostics Panel
@@ -87,6 +96,15 @@ export function updateProgress() {
   var progressFill = document.getElementById('progress-fill');
   var progressTime = document.getElementById('progress-time');
   if (!state.anim) return;
+
+  // Lottie A-B loop enforcement
+  if (lottieABLoop.active && lottieABLoop.a !== null && lottieABLoop.b !== null && !isScrubbing) {
+    var currentFr = state.anim.currentFrame;
+    if (currentFr >= lottieABLoop.b || currentFr < lottieABLoop.a) {
+      state.anim.goToAndPlay(lottieABLoop.a, true);
+    }
+  }
+
   progressFill.style.width = (state.anim.totalFrames > 0 ? (state.anim.currentFrame / state.anim.totalFrames * 100) : 0) + '%';
   progressTime.textContent = Math.round(state.anim.currentFrame) + ' / ' + Math.round(state.anim.totalFrames);
   state.progressRAF = requestAnimationFrame(updateProgress);
@@ -114,8 +132,18 @@ export function changeSpeed(val) { if (state.anim) state.anim.setSpeed(parseFloa
 export function seekAnim(e) {
   if (!state.anim) return;
   var rect = e.currentTarget.getBoundingClientRect();
-  state.anim.goToAndPlay(Math.round((e.clientX - rect.left) / rect.width * state.anim.totalFrames), true);
-  state.isPlaying = true; document.getElementById('btn-play').innerHTML = '&#9208;'; updateProgress();
+  var ratio = (e.clientX - rect.left) / rect.width;
+  var frame = Math.round(ratio * state.anim.totalFrames);
+  
+  if (state.isPlaying) {
+    state.anim.goToAndPlay(frame, true);
+  } else {
+    state.anim.goToAndStop(frame, true);
+    var progressFill = document.getElementById('progress-fill');
+    var progressTime = document.getElementById('progress-time');
+    if (progressFill) progressFill.style.width = (ratio * 100) + '%';
+    if (progressTime) progressTime.textContent = frame + ' / ' + Math.round(state.anim.totalFrames);
+  }
 }
 
 export function setBg(color, el) {
@@ -124,3 +152,163 @@ export function setBg(color, el) {
   var target = state.currentMode === 'lottie' ? lottiePlayer : document.querySelector('.img-preview-wrap');
   target.style.background = color === 'checker' ? 'repeating-conic-gradient(#e7e5e4 0% 25%, #fff 0% 50%) 50% / 20px 20px' : color;
 }
+
+export function stepFrame(dir) {
+  if (!state.anim) return;
+  
+  if (state.isPlaying) {
+    state.anim.pause();
+    state.isPlaying = false;
+    var btnPlay = document.getElementById('btn-play');
+    if (btnPlay) btnPlay.innerHTML = '&#9654;';
+    cancelAnimationFrame(state.progressRAF);
+  }
+  
+  var totalFr = state.anim.totalFrames;
+  var currentFr = state.anim.currentFrame;
+  var nextFr = currentFr + dir;
+  if (nextFr < 0) nextFr = totalFr - 1;
+  if (nextFr >= totalFr) nextFr = 0;
+  
+  state.anim.goToAndStop(nextFr, true);
+  
+  var progressFill = document.getElementById('progress-fill');
+  var progressTime = document.getElementById('progress-time');
+  if (progressFill) progressFill.style.width = (totalFr > 0 ? (nextFr / totalFr * 100) : 0) + '%';
+  if (progressTime) progressTime.textContent = Math.round(nextFr) + ' / ' + Math.round(totalFr);
+}
+
+export function updateLottieABUI() {
+  var btnA = document.getElementById('btn-ab-a');
+  var btnB = document.getElementById('btn-ab-b');
+  var loopRange = document.getElementById('progress-loop-range');
+  
+  if (!btnA || !btnB || !loopRange) return;
+  
+  btnA.classList.toggle('active', lottieABLoop.a !== null);
+  btnB.classList.toggle('active', lottieABLoop.b !== null);
+  
+  btnA.textContent = lottieABLoop.a !== null ? 'A: ' + Math.round(lottieABLoop.a) : 'A';
+  btnB.textContent = lottieABLoop.b !== null ? 'B: ' + Math.round(lottieABLoop.b) : 'B';
+  
+  if (lottieABLoop.a !== null && lottieABLoop.b !== null && state.anim && state.anim.totalFrames) {
+    var left = (lottieABLoop.a / state.anim.totalFrames) * 100;
+    var width = ((lottieABLoop.b - lottieABLoop.a) / state.anim.totalFrames) * 100;
+    loopRange.style.left = left + '%';
+    loopRange.style.width = width + '%';
+    loopRange.classList.remove('hidden');
+  } else {
+    loopRange.classList.add('hidden');
+    loopRange.style.left = '0%';
+    loopRange.style.width = '0%';
+  }
+}
+
+function handleScrub(e) {
+  if (!state.anim || state.currentMode !== 'lottie') return;
+  var progressBar = document.getElementById('progress-bar');
+  if (!progressBar) return;
+  var rect = progressBar.getBoundingClientRect();
+  var ratio = (e.clientX - rect.left) / rect.width;
+  ratio = Math.max(0, Math.min(1, ratio));
+  var frame = Math.round(ratio * state.anim.totalFrames);
+
+  state.anim.goToAndStop(frame, true);
+  
+  if (state.isPlaying) {
+    state.isPlaying = false;
+    var btnPlay = document.getElementById('btn-play');
+    if (btnPlay) btnPlay.innerHTML = '&#9654;';
+  }
+
+  var progressFill = document.getElementById('progress-fill');
+  var progressTime = document.getElementById('progress-time');
+  if (progressFill) progressFill.style.width = (ratio * 100) + '%';
+  if (progressTime) progressTime.textContent = frame + ' / ' + Math.round(state.anim.totalFrames);
+}
+
+// Global window event listeners for scrubbing
+window.addEventListener('mousemove', function(e) {
+  if (isScrubbing) {
+    handleScrub(e);
+  }
+});
+
+window.addEventListener('mouseup', function() {
+  isScrubbing = false;
+});
+
+function initLottieControls() {
+  var progressBar = document.getElementById('progress-bar');
+  if (progressBar) {
+    progressBar.addEventListener('mousedown', function(e) {
+      if (state.currentMode !== 'lottie') return;
+      isScrubbing = true;
+      handleScrub(e);
+    });
+  }
+
+  var btnPrev = document.getElementById('btn-prev-frame');
+  var btnNext = document.getElementById('btn-next-frame');
+  if (btnPrev) btnPrev.addEventListener('click', function() { stepFrame(-1); });
+  if (btnNext) btnNext.addEventListener('click', function() { stepFrame(1); });
+
+  var btnAbA = document.getElementById('btn-ab-a');
+  var btnAbB = document.getElementById('btn-ab-b');
+  var btnAbClear = document.getElementById('btn-ab-clear');
+
+  if (btnAbA) {
+    btnAbA.addEventListener('click', function() {
+      if (!state.anim) return;
+      lottieABLoop.a = state.anim.currentFrame;
+      if (lottieABLoop.b !== null && lottieABLoop.a >= lottieABLoop.b) {
+        lottieABLoop.b = null;
+      }
+      lottieABLoop.active = (lottieABLoop.a !== null && lottieABLoop.b !== null);
+      updateLottieABUI();
+    });
+  }
+
+  if (btnAbB) {
+    btnAbB.addEventListener('click', function() {
+      if (!state.anim) return;
+      lottieABLoop.b = state.anim.currentFrame;
+      if (lottieABLoop.a !== null && lottieABLoop.b <= lottieABLoop.a) {
+        var tmp = lottieABLoop.a;
+        lottieABLoop.a = lottieABLoop.b;
+        lottieABLoop.b = tmp;
+      }
+      lottieABLoop.active = (lottieABLoop.a !== null && lottieABLoop.b !== null);
+      updateLottieABUI();
+    });
+  }
+
+  if (btnAbClear) {
+    btnAbClear.addEventListener('click', function() {
+      lottieABLoop.a = null;
+      lottieABLoop.b = null;
+      lottieABLoop.active = false;
+      updateLottieABUI();
+    });
+  }
+
+  window.addEventListener('keydown', function(e) {
+    if (state.currentMode !== 'lottie' || !state.anim) return;
+    var tag = document.activeElement.tagName.toLowerCase();
+    if (tag === 'input' || tag === 'textarea' || document.activeElement.isContentEditable) return;
+
+    if (e.key === 'ArrowLeft') {
+      e.preventDefault();
+      stepFrame(-1);
+    } else if (e.key === 'ArrowRight') {
+      e.preventDefault();
+      stepFrame(1);
+    } else if (e.key === ' ') {
+      e.preventDefault();
+      togglePlay();
+    }
+  });
+}
+
+initLottieControls();
+
