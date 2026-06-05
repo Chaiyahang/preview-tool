@@ -233,12 +233,12 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--t
   .sidebar-toggle{display:flex}
 
   /* Sidebar — off-canvas drawer */
-  .sidebar{position:fixed;top:0;left:0;bottom:0;width:260px;max-width:80vw;z-index:1000;transform:translateX(-100%);transition:transform .25s cubic-bezier(.4,0,.2,1);box-shadow:none}
+  .sidebar{position:fixed;top:env(safe-area-inset-top, 0px);left:0;bottom:0;width:260px;max-width:80vw;z-index:1000;transform:translateX(-100%);transition:transform .25s cubic-bezier(.4,0,.2,1);box-shadow:none}
   .sidebar.open{transform:translateX(0);box-shadow:8px 0 30px rgba(0,0,0,0.5)}
   .sidebar-resizer{display:none}
 
   /* Sidebar backdrop */
-  .sidebar-backdrop{display:none;position:fixed;inset:0;z-index:999;background:rgba(0,0,0,0.5);transition:opacity .25s}
+  .sidebar-backdrop{display:none;position:fixed;top:env(safe-area-inset-top, 0px);left:0;right:0;bottom:0;z-index:999;background:rgba(0,0,0,0.5);transition:opacity .25s}
   .sidebar-backdrop.active{display:block}
 
   /* Main area */
