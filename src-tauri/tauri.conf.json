@@ -6,7 +6,7 @@
   "build": {
     "frontendDist": "../web-dist",
     "devUrl": "http://localhost:8080",
-    "beforeBuildCommand": "sh ../prepare-web.sh"
+    "beforeBuildCommand": ""
   },
   "app": {
     "windows": [

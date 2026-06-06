@@ -37,6 +37,10 @@ jobs:
         if: runner.os == 'Linux'
         run: sudo apt-get update && sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf libgtk-3-dev libjavascriptcoregtk-4.1-dev libsoup-3.0-dev
 
+      - name: Prepare web assets
+        run: sh prepare-web.sh
+        shell: bash
+
       - name: Build ${{ matrix.target }}
         run: cargo tauri build --bundles ${{ matrix.target }}
 
