@@ -1,4 +1,4 @@
-name: Build and Release DMG
+name: Build and Release
 
 on:
   push:
@@ -10,7 +10,20 @@ permissions:
 
 jobs:
   build:
-    runs-on: macos-latest
+    strategy:
+      matrix:
+        include:
+          - os: macos-latest
+            target: dmg
+            artifact_pattern: src-tauri/target/release/bundle/dmg/*.dmg
+          - os: ubuntu-latest
+            target: deb
+            artifact_pattern: src-tauri/target/release/bundle/deb/*.deb
+          - os: windows-latest
+            target: msi
+            artifact_pattern: src-tauri/target/release/bundle/msi/*.msi
+
+    runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
 
@@ -20,11 +33,15 @@ jobs:
       - name: Install Tauri CLI
         run: cargo install tauri-cli --version "^2"
 
-      - name: Build DMG
-        run: cargo tauri build --bundles dmg
+      - name: Install Linux deps
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf libgtk-3-dev libjavascriptcoregtk-4.1-dev libsoup-3.0-dev
 
-      - name: Release
+      - name: Build ${{ matrix.target }}
+        run: cargo tauri build --bundles ${{ matrix.target }}
+
+      - name: Upload artifacts
         uses: softprops/action-gh-release@v2
         with:
-          files: src-tauri/target/release/bundle/dmg/*.dmg
+          files: ${{ matrix.artifact_pattern }}
           generate_release_notes: true
