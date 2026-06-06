@@ -298,9 +298,9 @@ function initZoom() {
     var src = document.getElementById('img-preview-el').src;
     if (!src) return;
     zoomEl.src = src;
-    zoomScale = 1; zoomX = 0; zoomY = 0;
+    zoomScale = 0.5; zoomX = 0; zoomY = 0;
     overlay.classList.add('active');
-    zoomLevel.textContent = '100%';
+    zoomLevel.textContent = '50%';
     
     var grid = document.getElementById('img-zoom-grid-overlay');
     if (grid) {

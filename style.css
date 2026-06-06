@@ -97,6 +97,8 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--t
 
 /* Image zoom overlay */
 .img-zoom-overlay{position:fixed;inset:0;z-index:1000;background:rgba(0,0,0,0.92);display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity .2s ease;pointer-events:none}
+.img-zoom-overlay::before{content:'';position:absolute;inset:0;background-image:linear-gradient(rgba(148,163,184,0.08) 1px,transparent 1px),linear-gradient(90deg,rgba(148,163,184,0.08) 1px,transparent 1px);background-size:20px 20px;pointer-events:none;z-index:0}
+.img-zoom-overlay img{position:relative;z-index:1}
 .img-zoom-overlay.active{opacity:1;pointer-events:all}
 .img-zoom-overlay img{max-width:none;max-height:none;cursor:grab;transition:transform .1s ease;border-radius:0;box-shadow:none}
 .img-zoom-overlay img.dragging{cursor:grabbing;transition:none}
