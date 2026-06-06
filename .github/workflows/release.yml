@@ -20,8 +20,8 @@ jobs:
             target: deb
             artifact_pattern: src-tauri/target/release/bundle/deb/*.deb
           - os: windows-latest
-            target: msi
-            artifact_pattern: src-tauri/target/release/bundle/msi/*.msi
+            target: nsis
+            artifact_pattern: src-tauri/target/release/bundle/nsis/*.exe
 
     runs-on: ${{ matrix.os }}
     steps:
