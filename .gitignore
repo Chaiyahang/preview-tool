@@ -4,3 +4,4 @@ dist/
 .wrangler/
 .agents/
 src-tauri/target/
+web-dist/

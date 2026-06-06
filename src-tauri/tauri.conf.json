@@ -2,10 +2,11 @@
   "$schema": "https://schema.tauri.app/config/2",
   "productName": "Preview Tool",
   "version": "1.1.0",
-  "identifier": "com.previewtool.app",
+  "identifier": "com.previewtool.desktop",
   "build": {
-    "frontendDist": "..",
-    "devUrl": "http://localhost:8080"
+    "frontendDist": "../web-dist",
+    "devUrl": "http://localhost:8080",
+    "beforeBuildCommand": "sh ../prepare-web.sh"
   },
   "app": {
     "windows": [
