@@ -438,6 +438,27 @@ function initZoom() {
     zoomPickerHex.textContent = hex;
     zoomPickerHex.classList.add('visible');
   });
+
+  overlay.addEventListener('click', function(e) {
+    if (!zoomPickerActive || !zoomEl.naturalWidth || e.target === zoomPickerBtn) return;
+    ensureZoomBuffer();
+    if (!zoomOffscreenCanvas) return;
+    var rect = zoomEl.getBoundingClientRect();
+    var imgX = (e.clientX - rect.left - zoomX) / zoomScale;
+    var imgY = (e.clientY - rect.top - zoomY) / zoomScale;
+    if (imgX < 0 || imgY < 0 || imgX >= zoomEl.naturalWidth || imgY >= zoomEl.naturalHeight) return;
+    var rgba = zoomOffscreenCtx.getImageData(Math.floor(imgX), Math.floor(imgY), 1, 1).data;
+    var hex = '#' + [rgba[0], rgba[1], rgba[2]].map(function(c) { return ('0' + c.toString(16)).slice(-2); }).join('').toUpperCase();
+    navigator.clipboard.writeText(hex).then(function() {
+      var toast = document.createElement('div');
+      toast.className = 'color-toast';
+      toast.style.cssText = 'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:var(--accent);color:#fff;padding:8px 16px;border-radius:8px;font-size:12px;z-index:9999;box-shadow:0 4px 12px rgba(0,0,0,0.3);font-family:monospace;pointer-events:none;transition:opacity 0.2s;';
+      toast.textContent = '已复制颜色: ' + hex;
+      document.body.appendChild(toast);
+      setTimeout(function() { toast.style.opacity = '0'; }, 1200);
+      setTimeout(function() { if (toast.parentNode) toast.remove(); }, 1600);
+    });
+  });
 }
 
 function svgToJsx(svg) {
