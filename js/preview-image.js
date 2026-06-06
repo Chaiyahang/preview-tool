@@ -341,6 +341,48 @@ function initZoom() {
       grid.style.transform = transformStr;
     }
   }
+
+  // Zoom color picker
+  var zoomPickerActive = false;
+  var zoomPickerBtn = document.getElementById('zoom-picker');
+  var zoomPickerSwatch = document.getElementById('zoom-picker-swatch');
+  var zoomPickerHex = document.getElementById('zoom-picker-hex');
+
+  zoomPickerBtn.addEventListener('click', function() {
+    zoomPickerActive = !zoomPickerActive;
+    zoomPickerBtn.classList.toggle('active', zoomPickerActive);
+    if (!zoomPickerActive) {
+      zoomPickerSwatch.classList.remove('visible');
+      zoomPickerHex.classList.remove('visible');
+    }
+  });
+
+  document.addEventListener('keydown', function(e) {
+    if ((e.key === 'p' || e.key === 'P') && overlay.classList.contains('active')) {
+      zoomPickerActive = !zoomPickerActive;
+      zoomPickerBtn.classList.toggle('active', zoomPickerActive);
+      if (!zoomPickerActive) { zoomPickerSwatch.classList.remove('visible'); zoomPickerHex.classList.remove('visible'); }
+    }
+  });
+
+  overlay.addEventListener('mousemove', function(e) {
+    if (!zoomPickerActive || !zoomEl.src || !zoomEl.naturalWidth) return;
+    var rect = zoomEl.getBoundingClientRect();
+    var imgX = (e.clientX - rect.left - zoomX) / zoomScale;
+    var imgY = (e.clientY - rect.top - zoomY) / zoomScale;
+    if (imgX < 0 || imgY < 0 || imgX >= zoomEl.naturalWidth || imgY >= zoomEl.naturalHeight) return;
+    var canvas = document.createElement('canvas');
+    canvas.width = zoomEl.naturalWidth;
+    canvas.height = zoomEl.naturalHeight;
+    var ctx = canvas.getContext('2d');
+    ctx.drawImage(zoomEl, 0, 0);
+    var px = ctx.getImageData(Math.floor(imgX), Math.floor(imgY), 1, 1).data;
+    var hex = '#' + [px[0], px[1], px[2]].map(function(c) { return ('0' + c.toString(16)).slice(-2); }).join('').toUpperCase();
+    zoomPickerSwatch.style.background = hex;
+    zoomPickerSwatch.classList.add('visible');
+    zoomPickerHex.textContent = hex;
+    zoomPickerHex.classList.add('visible');
+  });
 }
 
 function svgToJsx(svg) {
