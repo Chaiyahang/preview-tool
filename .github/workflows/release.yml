@@ -42,7 +42,6 @@ jobs:
       - uses: softprops/action-gh-release@v2
         with:
           files: ${{ matrix.artifacts }}
-          generate_release_notes: true
 
   build-android:
     runs-on: ubuntu-latest
