@@ -2,6 +2,7 @@
   "name": "preview-tool",
   "version": "1.0.0",
   "description": "多媒体预览工具 — Lottie / Image / Video / File",
+  "main": "electron-main.js",
   "scripts": {
     "build": "echo static-site-no-build"
   },
