@@ -14,16 +14,17 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '20'
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
 
-      - run: npm install --save-dev electron electron-builder
+      - name: Install Tauri CLI
+        run: cargo install tauri-cli --version "^2"
 
-      - run: npx electron-builder --mac dmg --publish=never
+      - name: Build DMG
+        run: cargo tauri build --bundles dmg
 
       - name: Release
         uses: softprops/action-gh-release@v2
         with:
-          files: dist/*.dmg
+          files: src-tauri/target/release/bundle/dmg/*.dmg
           generate_release_notes: true

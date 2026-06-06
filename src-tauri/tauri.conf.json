@@ -1,0 +1,37 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "Preview Tool",
+  "version": "1.1.0",
+  "identifier": "com.previewtool.app",
+  "build": {
+    "frontendDist": "..",
+    "devUrl": "http://localhost:8080"
+  },
+  "app": {
+    "windows": [
+      {
+        "title": "Preview Tool",
+        "width": 1200,
+        "height": 800,
+        "minWidth": 800,
+        "minHeight": 600,
+        "resizable": true,
+        "fullscreen": false
+      }
+    ],
+    "security": {
+      "csp": "default-src 'self' 'unsafe-inline' 'unsafe-eval' https: blob:; img-src 'self' blob: data: https:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https: blob:; connect-src *; style-src 'self' 'unsafe-inline' https:; font-src 'self' https: data:; media-src 'self' blob: data:"
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": ["dmg"],
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.icns",
+      "icons/icon.ico"
+    ]
+  }
+}
