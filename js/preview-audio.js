@@ -5,10 +5,25 @@ import { formatSize, infoItem } from './preview-image.js';
 var audioCtx = null;
 var waveformRAF = null;
 var audioBuffer = null;
+var analyser = null;
+var mediaSource = null;
 var abLoop = { a: null, b: null, active: false };
 
 function getAudioContext() {
-  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  if (!audioCtx) {
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    analyser = audioCtx.createAnalyser();
+    analyser.fftSize = 128;
+    analyser.smoothingTimeConstant = 0.75;
+    var player = document.getElementById('audio-player');
+    if (player && !mediaSource) {
+      try {
+        mediaSource = audioCtx.createMediaElementSource(player);
+        mediaSource.connect(analyser);
+        analyser.connect(audioCtx.destination);
+      } catch (e) { /* already wired */ }
+    }
+  }
   return audioCtx;
 }
 
@@ -55,32 +70,67 @@ function drawWaveform(canvas, buffer) {
   ctx.stroke();
 }
 
-function drawPlayhead(canvas, ratio) {
+function renderFrame(canvas, ratio, playing) {
   var playhead = document.getElementById('audio-playhead-line');
   var progress = document.getElementById('audio-progress-overlay');
   var width = canvas ? canvas.offsetWidth : 0;
-  if (playhead) {
-    playhead.style.transform = 'translateX(' + (ratio * width) + 'px)';
-  }
-  if (progress) {
-    progress.style.width = (ratio * 100) + '%';
-  }
-}
-
-function updatePlayhead() {
-  var audio = document.getElementById('audio-player');
-  var canvas = document.getElementById('audio-waveform');
-  if (!audio || !canvas || !audio.duration) return;
 
   // A-B loop enforcement
-  if (abLoop.active && abLoop.a !== null && abLoop.b !== null) {
+  var audio = document.getElementById('audio-player');
+  if (audio && abLoop.active && abLoop.a !== null && abLoop.b !== null) {
     if (audio.currentTime >= abLoop.b) {
       audio.currentTime = abLoop.a;
+      ratio = audio.duration ? audio.currentTime / audio.duration : 0;
     }
   }
 
-  drawPlayhead(canvas, audio.currentTime / audio.duration);
-  if (!audio.paused) waveformRAF = requestAnimationFrame(updatePlayhead);
+  // Redraw static waveform — drawWaveform also paints the progress overlay
+  // up to `ratio`, which visually distinguishes the already-played region.
+  if (audioBuffer && canvas) {
+    drawWaveform(canvas, audioBuffer, ratio);
+  }
+
+  // Real-time spectrum overlay while playing
+  if (playing && analyser && canvas) {
+    var ctx = canvas.getContext('2d');
+    var w = canvas.width, h = canvas.height;
+    var freqData = new Uint8Array(analyser.frequencyBinCount);
+    analyser.getByteFrequencyData(freqData);
+    var barCount = 64;
+    var step = Math.max(1, Math.floor(freqData.length / barCount));
+    var barW = w / barCount;
+    ctx.save();
+    ctx.globalCompositeOperation = 'lighter';
+    for (var i = 0; i < barCount; i++) {
+      var sum = 0;
+      for (var j = 0; j < step; j++) sum += freqData[i * step + j];
+      var v = sum / step / 255;
+      if (v < 0.04) continue;
+      var barH = v * h * 0.9;
+      var x = i * barW;
+      var y = (h - barH) / 2;
+      var grad = ctx.createLinearGradient(0, y, 0, y + barH);
+      grad.addColorStop(0, 'rgba(56,189,248,0.85)');
+      grad.addColorStop(0.5, 'rgba(168,85,247,0.65)');
+      grad.addColorStop(1, 'rgba(236,72,153,0.85)');
+      ctx.fillStyle = grad;
+      ctx.fillRect(x + 1, y, barW - 2, barH);
+    }
+    ctx.restore();
+  }
+
+  if (playhead) playhead.style.transform = 'translateX(' + (ratio * width) + 'px)';
+  if (progress) progress.style.width = (ratio * 100) + '%';
+
+  if (playing) waveformRAF = requestAnimationFrame(function() {
+    var a = document.getElementById('audio-player');
+    var c = document.getElementById('audio-waveform');
+    if (a && c && a.duration) renderFrame(c, a.currentTime / a.duration, !a.paused);
+  });
+}
+
+function drawPlayhead(canvas, ratio) {
+  renderFrame(canvas, ratio, false);
 }
 
 function estimateBitrate(file, duration) {
@@ -226,9 +276,9 @@ export async function showAudioPreview(filePath) {
     infoPanel.innerHTML = infoItem('Filename', file.name) + infoItem('File Size', formatSize(file.size));
   }
 
-  audioPlayer.onplay = function() { updatePlayhead(); };
-  audioPlayer.onpause = function() { cancelAnimationFrame(waveformRAF); };
-  audioPlayer.onseeked = function() { if (audioBuffer) drawPlayhead(canvas, audioPlayer.currentTime / audioPlayer.duration); };
+  audioPlayer.onplay = function() { renderFrame(canvas, audioPlayer.currentTime / audioPlayer.duration, true); };
+  audioPlayer.onpause = function() { cancelAnimationFrame(waveformRAF); if (audioBuffer) renderFrame(canvas, audioPlayer.currentTime / audioPlayer.duration, false); };
+  audioPlayer.onseeked = function() { if (audioBuffer) renderFrame(canvas, audioPlayer.currentTime / audioPlayer.duration, !audioPlayer.paused); };
   
   canvas.onmousedown = function(e) {
     if (!audioPlayer.duration) return;
