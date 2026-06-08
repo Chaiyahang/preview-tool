@@ -3,5 +3,6 @@ dist/
 .DS_Store
 .wrangler/
 .agents/
+.qoder/
 src-tauri/target/
 web-dist/
