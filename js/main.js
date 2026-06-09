@@ -654,8 +654,16 @@ var WMO_MAP = {
 };
 
 function showWeather(lat, lon) {
-  var url = 'https://api.open-meteo.com/v1/forecast?latitude=' + lat + '&longitude=' + lon + '&current=temperature_2m,weather_code&timezone=auto';
-  fetch(url).then(function(r) { return r.json(); }).then(function(data) {
+  var weatherUrl = 'https://api.open-meteo.com/v1/forecast?latitude=' + lat + '&longitude=' + lon + '&current=temperature_2m,weather_code&timezone=auto';
+  var geoUrl = 'https://geocoding-api.open-meteo.com/v1/reverse?latitude=' + lat + '&longitude=' + lon + '&count=1&language=zh';
+
+  Promise.all([
+    fetch(weatherUrl).then(function(r) { return r.json(); }),
+    fetch(geoUrl).then(function(r) { return r.json(); }).catch(function() { return {}; })
+  ]).then(function(results) {
+    var data = results[0];
+    var geo = results[1];
+    var city = (geo.results && geo.results[0] && (geo.results[0].name || '')) || '';
     var temp = Math.round(data.current.temperature_2m);
     var code = data.current.weather_code;
     var info = WMO_MAP[code] || ['🌡', ''];
@@ -663,9 +671,10 @@ function showWeather(lat, lon) {
     var textEl = document.getElementById('weather-text');
     var wrap = document.getElementById('header-weather');
     if (iconEl) iconEl.textContent = info[0];
-    if (textEl) textEl.textContent = temp + '°C ' + info[1];
+    var display = city ? city + ' ' + temp + '°C ' + info[1] : temp + '°C ' + info[1];
+    if (textEl) textEl.textContent = display;
     if (wrap) {
-      wrap.title = data.current.temperature_2m.toFixed(1) + '°C · ' + info[1];
+      wrap.title = (city ? city + ' · ' : '') + data.current.temperature_2m.toFixed(1) + '°C · ' + info[1];
       wrap.classList.add('loaded');
     }
   }).catch(function() {});
