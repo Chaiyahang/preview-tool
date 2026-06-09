@@ -628,3 +628,55 @@ export function dismissHistoryBar() {
 }
 
 initHistoryRestoreBar();
+
+// Header clock
+function updateClock() {
+  var el = document.getElementById('header-clock');
+  if (!el) return;
+  var now = new Date();
+  var h = String(now.getHours()).padStart(2, '0');
+  var m = String(now.getMinutes()).padStart(2, '0');
+  var s = String(now.getSeconds()).padStart(2, '0');
+  el.textContent = h + ':' + m + ':' + s;
+}
+updateClock();
+setInterval(updateClock, 1000);
+
+// Header weather (Open-Meteo, no API key)
+var WMO_MAP = {
+  0: ['☀️', '晴'], 1: ['🌤', '大部晴'], 2: ['⛅', '多云'], 3: ['☁️', '阴'],
+  45: ['🌫', '雾'], 48: ['🌫', '雾凇'],
+  51: ['🌦', '小毛毛雨'], 53: ['🌦', '毛毛雨'], 55: ['🌧', '大毛毛雨'],
+  61: ['🌧', '小雨'], 63: ['🌧', '中雨'], 65: ['🌧', '大雨'],
+  71: ['🌨', '小雪'], 73: ['🌨', '中雪'], 75: ['❄️', '大雪'],
+  80: ['🌦', '阵雨'], 81: ['🌧', '阵雨'], 82: ['⛈', '暴雨'],
+  95: ['⛈', '雷阵雨'], 96: ['⛈', '雷阵雨+冰雹'], 99: ['⛈', '强雷阵雨']
+};
+
+function showWeather(lat, lon) {
+  var url = 'https://api.open-meteo.com/v1/forecast?latitude=' + lat + '&longitude=' + lon + '&current=temperature_2m,weather_code&timezone=auto';
+  fetch(url).then(function(r) { return r.json(); }).then(function(data) {
+    var temp = Math.round(data.current.temperature_2m);
+    var code = data.current.weather_code;
+    var info = WMO_MAP[code] || ['🌡', ''];
+    var iconEl = document.getElementById('weather-icon');
+    var textEl = document.getElementById('weather-text');
+    var wrap = document.getElementById('header-weather');
+    if (iconEl) iconEl.textContent = info[0];
+    if (textEl) textEl.textContent = temp + '°C ' + info[1];
+    if (wrap) {
+      wrap.title = data.current.temperature_2m.toFixed(1) + '°C · ' + info[1];
+      wrap.classList.add('loaded');
+    }
+  }).catch(function() {});
+}
+
+function initWeather() {
+  if (!navigator.geolocation) return;
+  navigator.geolocation.getCurrentPosition(
+    function(pos) { showWeather(pos.coords.latitude, pos.coords.longitude); },
+    function() {},
+    { timeout: 5000 }
+  );
+}
+initWeather();
