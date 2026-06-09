@@ -1,6 +1,6 @@
 {
   "name": "preview-tool",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "多媒体预览工具 — Lottie / Image / Video / File",
   "scripts": {
     "build": "echo static-site-no-build",
