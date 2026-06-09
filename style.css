@@ -247,8 +247,7 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--t
   .header-meta{gap:6px}
   .info-pill{font-size:10px;padding:4px 8px}
   .btn-reset{padding:5px 10px;font-size:11px}
-  .header-clock{font-size:10px;padding:4px 8px}
-  .header-weather{font-size:10px;padding:4px 8px}
+  .header-clock,.header-weather{display:none !important}
 
   /* Sidebar toggle — visible on mobile */
   .sidebar-toggle{display:flex}
