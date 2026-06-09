@@ -2,7 +2,7 @@
 import { playJson, togglePlay, stopAnim, toggleLoop, changeSpeed, seekAnim, setBg, updateProgress } from './preview-lottie.js';
 import { showImagePreview, formatSize, cleanupPAGView } from './preview-image.js';
 import { showVideoPreview } from './preview-video.js';
-import { showAudioPreview, cleanupAudio } from './preview-audio.js';
+import { showAudioPreview, cleanupAudio, showAudioPreviewFromUrl } from './preview-audio.js';
 import { showFilePreview } from './preview-file.js';
 import { showFontPreview, cleanupFontPreview } from './preview-font.js';
 import { processEntries, processFiles, buildTree, getActiveDropZone, toggleMenu, closeMenu, isImageFile, isVideoFile, isAudioFile } from './file-handler.js';
@@ -230,6 +230,23 @@ document.addEventListener('paste', async function(e) {
 ['audio-folder','audio-zip','audio-file','audio-folder2','audio-zip2','audio-file2'].forEach(function(id) {
   document.getElementById(id).addEventListener('change', function(e) { if (e.target.files.length > 0) processFiles(e.target.files); });
 });
+
+// Audio URL input — load direct audio from URL
+function handleAudioUrlInput(inputId) {
+  var input = document.getElementById(inputId);
+  if (!input) return;
+  input.addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') { showAudioPreviewFromUrl(input.value); input.blur(); }
+  });
+}
+['audio-url-input', 'audio-url-input-2'].forEach(function(id) { handleAudioUrlInput(id); });
+document.getElementById('audio-url-load').addEventListener('click', function() {
+  showAudioPreviewFromUrl(document.getElementById('audio-url-input').value);
+});
+document.getElementById('audio-url-load-2').addEventListener('click', function() {
+  showAudioPreviewFromUrl(document.getElementById('audio-url-input-2').value);
+});
+
 ['file-folder','file-zip','file-any','file-folder2','file-zip2','file-any2'].forEach(function(id) {
   document.getElementById(id).addEventListener('change', function(e) { if (e.target.files.length > 0) processFiles(e.target.files); });
 });

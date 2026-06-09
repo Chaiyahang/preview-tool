@@ -161,6 +161,16 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--t
 .audio-ctrl-btn:hover{border-color:var(--border-hover);color:var(--text)}
 .audio-ctrl-btn-active{background:rgba(251,191,36,0.15);border-color:rgba(251,191,36,0.4);color:var(--amber)}
 .audio-ctrl-btn-dim{color:var(--text-muted);font-size:12px;padding:4px 8px}
+.audio-url-bar{display:flex;align-items:center;gap:8px;width:100%;max-width:520px;margin-top:12px}
+.audio-url-input{flex:1;background:var(--bg-tertiary);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;padding:10px 14px;font-family:inherit;outline:none;transition:border-color .15s}
+.audio-url-input:focus{border-color:var(--accent)}
+.audio-url-input::placeholder{color:var(--text-muted);font-size:12px}
+.audio-url-btn{width:40px;height:40px;flex-shrink:0;display:flex;align-items:center;justify-content:center;background:var(--accent);border:none;border-radius:8px;color:#fff;cursor:pointer;transition:opacity .15s}
+.audio-url-btn:hover{opacity:0.85}
+.audio-url-btn svg{width:16px;height:16px}
+.audio-url-bar-inline{margin-top:0;max-width:700px}
+.audio-url-loading{color:var(--text-muted);font-size:12px;padding:6px 0;animation:audioUrlPulse 1.5s ease-in-out infinite}
+@keyframes audioUrlPulse{0%,100%{opacity:.4}50%{opacity:1}}
 
 /* File preview */
 .file-preview-container{position:absolute;inset:0;display:flex;flex-direction:column;overflow:hidden}
@@ -280,6 +290,8 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--t
   /* Audio preview — responsive */
   .audio-preview-container{position:relative;inset:auto;width:100%;height:100%;padding:12px;padding-bottom:calc(env(safe-area-inset-bottom, 20px) + 40px);overflow-y:scroll;-webkit-overflow-scrolling:touch;justify-content:flex-start}
   .audio-waveform-wrap{max-width:none;height:120px}
+  .audio-url-bar{max-width:none}
+  .audio-url-bar-inline{max-width:none}
 
   /* Lottie player in wrap */
   #lottie-player{width:90%;height:70%;max-width:none;max-height:none}

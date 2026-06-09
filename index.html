@@ -196,6 +196,12 @@
           <label><svg viewBox="0 0 24 24"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg> Audio<input type="file" id="audio-file" accept=".mp3,.wav,.ogg,.flac,.aac,.m4a,.wma" multiple></label>
         </div>
       </div>
+      <div class="audio-url-bar">
+        <input type="text" id="audio-url-input" class="audio-url-input" placeholder="粘贴音频直链 URL（.mp3 / .wav / .ogg / .flac / .aac）" spellcheck="false">
+        <button class="audio-url-btn" id="audio-url-load" title="加载">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+        </button>
+      </div>
     </div>
 
     <div class="drop-zone hidden" id="drop-zone-font">
@@ -251,6 +257,12 @@
       <div class="img-info-panel" id="video-info-panel"></div>
     </div>
     <div class="audio-preview-container hidden" id="preview-audio">
+      <div class="audio-url-bar audio-url-bar-inline">
+        <input type="text" id="audio-url-input-2" class="audio-url-input" placeholder="粘贴音频直链 URL（.mp3 / .wav / .ogg / .flac / .aac）" spellcheck="false">
+        <button class="audio-url-btn" id="audio-url-load-2" title="加载">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+        </button>
+      </div>
       <div class="audio-waveform-wrap" style="position: relative;">
         <canvas id="audio-waveform"></canvas>
         <div class="audio-progress-overlay" id="audio-progress-overlay"></div>

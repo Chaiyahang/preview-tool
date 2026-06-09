@@ -287,6 +287,105 @@ export async function showAudioPreview(filePath) {
   };
 }
 
+var AUDIO_URL_EXTS = ['.mp3', '.wav', '.ogg', '.flac', '.aac', '.m4a', '.wma'];
+
+function guessExtFromUrl(url) {
+  var pathname = url.split('?')[0].split('#')[0];
+  var dot = pathname.lastIndexOf('.');
+  if (dot === -1) return '';
+  var ext = pathname.slice(dot).toLowerCase();
+  return AUDIO_URL_EXTS.indexOf(ext) !== -1 ? ext : '';
+}
+
+function fileNameFromUrl(url) {
+  try {
+    var pathname = new URL(url).pathname;
+    var parts = pathname.split('/');
+    var name = decodeURIComponent(parts[parts.length - 1]);
+    return name || 'online-audio';
+  } catch(e) {
+    return 'online-audio';
+  }
+}
+
+export async function showAudioPreviewFromUrl(url) {
+  url = url.trim();
+  if (!url) return;
+  if (!/^https?:\/\//i.test(url)) {
+    alert('请输入以 http:// 或 https:// 开头的有效音频 URL');
+    return;
+  }
+
+  var ext = guessExtFromUrl(url);
+  var fileName = fileNameFromUrl(url);
+
+  var previewAudio = document.getElementById('preview-audio');
+  var audioPlayer = document.getElementById('audio-player');
+  var canvas = document.getElementById('audio-waveform');
+  var infoPanel = document.getElementById('audio-info-panel');
+  var infoBadge = document.getElementById('info-badge');
+
+  hideAllPreviews();
+  previewAudio.classList.remove('hidden');
+  document.getElementById('controls').classList.add('hidden');
+
+  cancelAnimationFrame(waveformRAF);
+  audioPlayer.pause();
+  audioPlayer.src = url;
+  audioPlayer.load();
+  audioPlayer.playbackRate = 1;
+  infoBadge.style.display = '';
+  infoBadge.textContent = fileName;
+
+  abLoop.a = null; abLoop.b = null; abLoop.active = false;
+
+  buildControls();
+  var speedSelect = document.getElementById('audio-speed');
+  if (speedSelect) speedSelect.value = '1';
+  updateABButtons();
+
+  var rect = canvas.parentElement.getBoundingClientRect();
+  canvas.width = Math.floor(rect.width) || 800;
+  canvas.height = 160;
+
+  audioBuffer = null;
+  infoPanel.innerHTML = infoItem('Filename', fileName) + infoItem('Source', url) + '<div class="audio-url-loading">正在加载波形数据...</div>';
+
+  try {
+    var resp = await fetch(url);
+    if (!resp.ok) throw new Error('HTTP ' + resp.status);
+    var arrayBuf = await resp.arrayBuffer();
+    var ctx = getAudioContext();
+    audioBuffer = await ctx.decodeAudioData(arrayBuf);
+    drawWaveform(canvas, audioBuffer);
+
+    var bitrate = estimateBitrate({ size: arrayBuf.byteLength }, audioBuffer.duration);
+    var html = '';
+    html += infoItem('Filename', fileName);
+    html += infoItem('Format', (ext || '—').toUpperCase());
+    html += infoItem('Duration', audioBuffer.duration.toFixed(1) + 's');
+    html += infoItem('Sample Rate', (audioBuffer.sampleRate / 1000).toFixed(1) + ' kHz');
+    html += infoItem('Channels', audioBuffer.numberOfChannels === 1 ? 'Mono' : (audioBuffer.numberOfChannels === 2 ? 'Stereo' : audioBuffer.numberOfChannels + 'ch'));
+    if (bitrate) html += infoItem('Bitrate', bitrate + ' kbps');
+    html += infoItem('Size', formatSize(arrayBuf.byteLength));
+    html += infoItem('Source', '<a href="' + url + '" target="_blank" rel="noopener" style="color:var(--accent)">在线链接</a>');
+    infoPanel.innerHTML = html;
+    infoBadge.textContent = (ext ? ext.slice(1).toUpperCase() + ' · ' : '') + audioBuffer.duration.toFixed(1) + 's · ' + (bitrate ? bitrate + 'kbps · ' : '') + (audioBuffer.sampleRate / 1000).toFixed(1) + 'kHz · ' + (audioBuffer.numberOfChannels === 1 ? 'Mono' : 'Stereo');
+  } catch(e) {
+    infoPanel.innerHTML = infoItem('Filename', fileName) + infoItem('Source', '<a href="' + url + '" target="_blank" rel="noopener" style="color:var(--accent)">在线链接</a>') + infoItem('Waveform', '无法加载（跨域限制）');
+  }
+
+  audioPlayer.onplay = function() { renderFrame(canvas, audioPlayer.currentTime / audioPlayer.duration, true); };
+  audioPlayer.onpause = function() { cancelAnimationFrame(waveformRAF); if (audioBuffer) renderFrame(canvas, audioPlayer.currentTime / audioPlayer.duration, false); };
+  audioPlayer.onseeked = function() { if (audioBuffer) renderFrame(canvas, audioPlayer.currentTime / audioPlayer.duration, !audioPlayer.paused); };
+
+  canvas.onmousedown = function(e) {
+    if (!audioPlayer.duration) return;
+    isSeeking = true;
+    handleSeek(e);
+  };
+}
+
 export function cleanupAudio() {
   cancelAnimationFrame(waveformRAF);
   audioBuffer = null;
