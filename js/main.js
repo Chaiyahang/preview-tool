@@ -688,4 +688,4 @@ function initWeather() {
     { timeout: 5000 }
   );
 }
-initWeather();
+if (!window.matchMedia('(max-width: 768px)').matches) initWeather();
