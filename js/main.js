@@ -7,6 +7,7 @@ import { showFilePreview } from './preview-file.js';
 import { showFontPreview, cleanupFontPreview } from './preview-font.js';
 import { processEntries, processFiles, buildTree, getActiveDropZone, toggleMenu, closeMenu, isImageFile, isVideoFile, isAudioFile } from './file-handler.js';
 import { checkLastProjectHistory, restoreProjectFromHistory, deleteProjectHistory } from './history-manager.js';
+import { initQrScanner } from './qr-scanner.js';
 
 // Shared state — exported for other modules to import
 export var state = {
@@ -93,7 +94,7 @@ function applyTransition(direction) {
   }
 }
 
-function switchMode(mode, direction) {
+export function switchMode(mode, direction) {
   var oldMode = state.currentMode;
   var oldIdx = TAB_MODES.indexOf(oldMode);
   var newIdx = TAB_MODES.indexOf(mode);
@@ -417,7 +418,6 @@ function shouldIgnoreSwipe(target) {
           current.classList.contains('tree-item') ||
           current.tagName === 'AUDIO' ||
           current.tagName === 'VIDEO' ||
-          current.tagName === 'CANVAS' ||
           current.tagName === 'IFRAME') {
         return true;
       }
@@ -628,6 +628,7 @@ export function dismissHistoryBar() {
 }
 
 initHistoryRestoreBar();
+initQrScanner();
 
 // Header clock
 function updateClock() {

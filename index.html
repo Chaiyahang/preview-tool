@@ -17,6 +17,7 @@
 <script src="https://cdn.jsdelivr.net/npm/heic2any@0.0.4/dist/heic2any.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/libpag@4.2.81/lib/libpag.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/sql.js@1.10.3/dist/sql-wasm.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js"></script>
 </head>
 <body>
 
@@ -43,6 +44,16 @@
       <span class="weather-icon" id="weather-icon"></span>
       <span class="weather-text" id="weather-text"></span>
     </div>
+    <button class="btn-scan" id="btn-scan" title="Scan QR Code">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M3 7V5a2 2 0 0 1 2-2h2"></path>
+        <path d="M17 3h2a2 2 0 0 1 2 2v2"></path>
+        <path d="M21 17v2a2 2 0 0 1-2 2h-2"></path>
+        <path d="M7 21H5a2 2 0 0 1-2-2v-2"></path>
+        <line x1="7" y1="12" x2="17" y2="12"></line>
+        <line x1="12" y1="7" x2="12" y2="17"></line>
+      </svg>
+    </button>
     <button class="btn-reset" title="Clear all and start over">Reset</button>
   </div>
 </div>
@@ -388,6 +399,21 @@
 <div class="image-magnifier hidden" id="image-magnifier">
   <canvas id="magnifier-canvas" width="132" height="132"></canvas>
   <div id="magnifier-color-text">#FFFFFF</div>
+</div>
+
+<!-- QR Code Scanner Modal -->
+<div class="scan-modal hidden" id="scan-modal">
+  <div class="scan-modal-content">
+    <div class="scan-modal-header">
+      <h3>扫码导入/预览</h3>
+      <button class="scan-modal-close" id="btn-scan-close">&times;</button>
+    </div>
+    <div class="scan-view-wrap">
+      <div id="reader"></div>
+      <div class="scan-laser"></div>
+    </div>
+    <div class="scan-modal-hint">请将二维码放入框内，支持解析直链文件或文本</div>
+  </div>
 </div>
 
 <script type="module" src="js/main.js"></script>
