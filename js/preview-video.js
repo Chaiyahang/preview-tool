@@ -64,7 +64,6 @@ export async function showVideoPreview(filePath) {
 
   if (file.name.toLowerCase().endsWith('.ts')) {
     var mediaSource = new MediaSource();
-    videoPlayer.src = URL.createObjectURL(mediaSource);
     
     mediaSource.addEventListener('sourceopen', async function() {
       try {
@@ -161,6 +160,8 @@ export async function showVideoPreview(filePath) {
         infoBadge.style.color = "var(--destructive)";
       }
     });
+
+    videoPlayer.src = URL.createObjectURL(mediaSource);
 
     videoPlayer.onerror = function() {
       if (videoPlayer.error) {
