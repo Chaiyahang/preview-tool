@@ -67,64 +67,108 @@ export async function showVideoPreview(filePath) {
     videoPlayer.src = URL.createObjectURL(mediaSource);
     
     mediaSource.addEventListener('sourceopen', async function() {
-      var sourceBuffer;
-      try {
-        sourceBuffer = mediaSource.addSourceBuffer('video/mp4; codecs="avc1.42E01E,mp4a.40.2"');
-      } catch (err) {
-        console.warn("MSE initialization failed with full codecs, trying video-only codecs...", err);
-        try {
-          sourceBuffer = mediaSource.addSourceBuffer('video/mp4; codecs="avc1.42E01E"');
-        } catch (err2) {
-          console.warn("MSE initialization failed with video-only codecs, trying basic video/mp4...", err2);
-          try {
-            sourceBuffer = mediaSource.addSourceBuffer('video/mp4');
-          } catch(err3) {
-            console.error("MSE initialization failed completely", err3);
-            return;
-          }
-        }
-      }
-
-      var queue = [];
-      var transmuxer = new muxjs.mp4.Transmuxer();
-      
-      transmuxer.on('data', function(segment) {
-        if (segment.initSegment && segment.initSegment.byteLength > 0) {
-          queue.push(segment.initSegment);
-        }
-        if (segment.data && segment.data.byteLength > 0) {
-          queue.push(segment.data);
-        }
-      });
-      
-      function appendNext() {
-        if (queue.length === 0) {
-          if (!sourceBuffer.updating && mediaSource.readyState === 'open') {
-            mediaSource.endOfStream();
-          }
-          return;
-        }
-        if (sourceBuffer.updating) {
-          return;
-        }
-        try {
-          sourceBuffer.appendBuffer(queue.shift());
-        } catch (appendErr) {
-          console.error("Error appending buffer to SourceBuffer", appendErr);
-        }
-      }
-      
-      sourceBuffer.addEventListener('updateend', appendNext);
-      
       try {
         var buffer = await file.arrayBuffer();
+        
+        // 1. 动态探测 Codec
+        var videoCodec = "";
+        var audioCodec = "";
+        try {
+          var tracks = muxjs.mp4.probe.tracks(new Uint8Array(buffer));
+          console.log("TS tracks probed:", tracks);
+          if (tracks && tracks.length > 0) {
+            tracks.forEach(function(track) {
+              if (track.type === 'video' && track.codec) videoCodec = track.codec;
+              if (track.type === 'audio' && track.codec) audioCodec = track.codec;
+            });
+          }
+        } catch (probeErr) {
+          console.warn("Probe TS tracks failed", probeErr);
+        }
+
+        var codecParts = [];
+        if (videoCodec) codecParts.push(videoCodec);
+        if (audioCodec) codecParts.push(audioCodec);
+        
+        var mimeType = 'video/mp4';
+        if (codecParts.length > 0) {
+          mimeType += '; codecs="' + codecParts.join(',') + '"';
+        } else {
+          mimeType += '; codecs="avc1.42E01E,mp4a.40.2"'; // fallback
+        }
+        
+        console.log("Creating SourceBuffer with MIME type:", mimeType);
+        var sourceBuffer;
+        try {
+          sourceBuffer = mediaSource.addSourceBuffer(mimeType);
+        } catch (err) {
+          console.warn("MSE initialization failed with probed codecs, trying fallback...", err);
+          try {
+            sourceBuffer = mediaSource.addSourceBuffer('video/mp4; codecs="avc1.42E01E,mp4a.40.2"');
+          } catch (err2) {
+            try {
+              sourceBuffer = mediaSource.addSourceBuffer('video/mp4; codecs="avc1.42E01E"');
+            } catch(err3) {
+              sourceBuffer = mediaSource.addSourceBuffer('video/mp4');
+            }
+          }
+        }
+
+        var queue = [];
+        var transmuxer = new muxjs.mp4.Transmuxer();
+        
+        transmuxer.on('data', function(segment) {
+          if (segment.initSegment && segment.initSegment.byteLength > 0) {
+            console.log("Transmuxer generated init segment size:", segment.initSegment.byteLength);
+            queue.push(segment.initSegment);
+          }
+          if (segment.data && segment.data.byteLength > 0) {
+            queue.push(segment.data);
+          }
+        });
+        
+        function appendNext() {
+          if (queue.length === 0) {
+            if (!sourceBuffer.updating && mediaSource.readyState === 'open') {
+              console.log("Transmux data append finished, closing stream");
+              mediaSource.endOfStream();
+            }
+            return;
+          }
+          if (sourceBuffer.updating) {
+            return;
+          }
+          var nextData = queue.shift();
+          try {
+            sourceBuffer.appendBuffer(nextData);
+          } catch (appendErr) {
+            console.error("Error appending buffer to SourceBuffer:", appendErr);
+          }
+        }
+        
+        sourceBuffer.addEventListener('updateend', appendNext);
+        
+        // 2. 开始推送数据给 transmuxer
+        console.log("Pushing TS data to transmuxer...");
         transmuxer.push(new Uint8Array(buffer));
         transmuxer.flush();
+        console.log("Transmuxer finished, queue size:", queue.length);
+        
         appendNext();
-      } catch(e) {
-        console.error('Transmux read file error:', e);
+      } catch (e) {
+        console.error("MSE initialization error:", e);
+        infoBadge.textContent = "视频解析失败: " + e.message;
+        infoBadge.style.color = "var(--destructive)";
       }
     });
+
+    videoPlayer.onerror = function() {
+      if (videoPlayer.error) {
+        console.error("Video player error:", videoPlayer.error);
+        infoBadge.textContent = "播放失败: " + (videoPlayer.error.message || "解码错误或编码不支持");
+        infoBadge.style.color = "var(--destructive)";
+      }
+    };
     
     metaReady = true;
   } else {
