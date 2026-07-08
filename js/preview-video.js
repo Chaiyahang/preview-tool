@@ -153,6 +153,13 @@ export async function showVideoPreview(filePath) {
         transmuxer.flush();
         console.log("Transmuxer finished, queue size:", queue.length);
         
+        if (queue.length === 0) {
+          console.warn("Transmuxer generated 0 segments. The TS file may contain unsupported codecs like MPEG-2.");
+          infoBadge.textContent = "播放失败: 视频编码不受支持 (请确保为 H.264 / AAC 编码)";
+          infoBadge.style.color = "var(--destructive)";
+          return;
+        }
+        
         appendNext();
       } catch (e) {
         console.error("MSE initialization error:", e);
