@@ -69,52 +69,17 @@ export async function showVideoPreview(filePath) {
       try {
         var buffer = await file.arrayBuffer();
         
-        // 1. 动态探测 Codec
-        var videoCodec = "";
-        var audioCodec = "";
-        try {
-          var tracks = muxjs.mp4.probe.tracks(new Uint8Array(buffer));
-          console.log("TS tracks probed:", tracks);
-          if (tracks && tracks.length > 0) {
-            tracks.forEach(function(track) {
-              if (track.type === 'video' && track.codec) videoCodec = track.codec;
-              if (track.type === 'audio' && track.codec) audioCodec = track.codec;
-            });
-          }
-        } catch (probeErr) {
-          console.warn("Probe TS tracks failed", probeErr);
-        }
-
-        var codecParts = [];
-        if (videoCodec) codecParts.push(videoCodec);
-        if (audioCodec) codecParts.push(audioCodec);
-        
-        var mimeType = 'video/mp4';
-        if (codecParts.length > 0) {
-          mimeType += '; codecs="' + codecParts.join(',') + '"';
-        } else {
-          mimeType += '; codecs="avc1.42E01E,mp4a.40.2"'; // fallback
-        }
-        
-        console.log("Creating SourceBuffer with MIME type:", mimeType);
-        var sourceBuffer;
-        try {
-          sourceBuffer = mediaSource.addSourceBuffer(mimeType);
-        } catch (err) {
-          console.warn("MSE initialization failed with probed codecs, trying fallback...", err);
-          try {
-            sourceBuffer = mediaSource.addSourceBuffer('video/mp4; codecs="avc1.42E01E,mp4a.40.2"');
-          } catch (err2) {
-            try {
-              sourceBuffer = mediaSource.addSourceBuffer('video/mp4; codecs="avc1.42E01E"');
-            } catch(err3) {
-              sourceBuffer = mediaSource.addSourceBuffer('video/mp4');
-            }
-          }
-        }
-
         var queue = [];
+        var hasAudio = false;
+        var hasVideo = true;
+        
         var transmuxer = new muxjs.mp4.Transmuxer();
+        
+        transmuxer.on('trackinfo', function(info) {
+          console.log("TS track info generated:", info);
+          hasAudio = info.hasAudio;
+          hasVideo = info.hasVideo;
+        });
         
         transmuxer.on('data', function(segment) {
           if (segment.initSegment && segment.initSegment.byteLength > 0) {
@@ -125,6 +90,46 @@ export async function showVideoPreview(filePath) {
             queue.push(segment.data);
           }
         });
+        
+        // 1. 同步进行转码与包搜集
+        console.log("Transmuxing TS file...");
+        transmuxer.push(new Uint8Array(buffer));
+        transmuxer.flush();
+        console.log("Transmuxer finished. Segments in queue:", queue.length, "hasAudio:", hasAudio, "hasVideo:", hasVideo);
+        
+        if (queue.length === 0) {
+          console.warn("Transmuxer generated 0 segments. The TS file may contain unsupported codecs like MPEG-2.");
+          infoBadge.textContent = "播放失败: 视频编码不受支持 (请确保为 H.264 / AAC 编码)";
+          infoBadge.style.color = "var(--destructive)";
+          return;
+        }
+        
+        // 2. 动态构建精确的 MIME 格式
+        var codecParts = [];
+        if (hasVideo) codecParts.push("avc1.42E01E");
+        if (hasAudio) codecParts.push("mp4a.40.2");
+        
+        var mimeType = 'video/mp4';
+        if (codecParts.length > 0) {
+          mimeType += '; codecs="' + codecParts.join(',') + '"';
+        }
+        
+        console.log("Creating SourceBuffer with dynamic MIME type:", mimeType);
+        var sourceBuffer;
+        try {
+          sourceBuffer = mediaSource.addSourceBuffer(mimeType);
+        } catch (err) {
+          console.warn("MSE initialization failed with dynamic MIME type, trying fallback...", err);
+          try {
+            sourceBuffer = mediaSource.addSourceBuffer('video/mp4; codecs="avc1.42E01E,mp4a.40.2"');
+          } catch (err2) {
+            try {
+              sourceBuffer = mediaSource.addSourceBuffer('video/mp4; codecs="avc1.42E01E"');
+            } catch(err3) {
+              sourceBuffer = mediaSource.addSourceBuffer('video/mp4');
+            }
+          }
+        }
         
         function appendNext() {
           if (queue.length === 0) {
@@ -146,20 +151,6 @@ export async function showVideoPreview(filePath) {
         }
         
         sourceBuffer.addEventListener('updateend', appendNext);
-        
-        // 2. 开始推送数据给 transmuxer
-        console.log("Pushing TS data to transmuxer...");
-        transmuxer.push(new Uint8Array(buffer));
-        transmuxer.flush();
-        console.log("Transmuxer finished, queue size:", queue.length);
-        
-        if (queue.length === 0) {
-          console.warn("Transmuxer generated 0 segments. The TS file may contain unsupported codecs like MPEG-2.");
-          infoBadge.textContent = "播放失败: 视频编码不受支持 (请确保为 H.264 / AAC 编码)";
-          infoBadge.style.color = "var(--destructive)";
-          return;
-        }
-        
         appendNext();
       } catch (e) {
         console.error("MSE initialization error:", e);
