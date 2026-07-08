@@ -62,20 +62,83 @@ export async function showVideoPreview(filePath) {
     tryRender();
   };
 
-  var url = URL.createObjectURL(file);
+  if (file.name.toLowerCase().endsWith('.ts')) {
+    var mediaSource = new MediaSource();
+    videoPlayer.src = URL.createObjectURL(mediaSource);
+    
+    mediaSource.addEventListener('sourceopen', async function() {
+      var sourceBuffer;
+      try {
+        sourceBuffer = mediaSource.addSourceBuffer('video/mp4; codecs="avc1.42E01E,mp4a.40.2"');
+      } catch (err) {
+        console.warn("MSE initialization failed with full codecs, trying video-only codecs...", err);
+        try {
+          sourceBuffer = mediaSource.addSourceBuffer('video/mp4; codecs="avc1.42E01E"');
+        } catch (err2) {
+          console.warn("MSE initialization failed with video-only codecs, trying basic video/mp4...", err2);
+          try {
+            sourceBuffer = mediaSource.addSourceBuffer('video/mp4');
+          } catch(err3) {
+            console.error("MSE initialization failed completely", err3);
+            return;
+          }
+        }
+      }
+
+      var queue = [];
+      var transmuxer = new muxjs.mp4.Transmuxer();
+      
+      transmuxer.on('data', function(segment) {
+        queue.push(segment.data);
+      });
+      
+      function appendNext() {
+        if (queue.length === 0) {
+          if (!sourceBuffer.updating && mediaSource.readyState === 'open') {
+            mediaSource.endOfStream();
+          }
+          return;
+        }
+        if (sourceBuffer.updating) {
+          return;
+        }
+        try {
+          sourceBuffer.appendBuffer(queue.shift());
+        } catch (appendErr) {
+          console.error("Error appending buffer to SourceBuffer", appendErr);
+        }
+      }
+      
+      sourceBuffer.addEventListener('updateend', appendNext);
+      
+      try {
+        var buffer = await file.arrayBuffer();
+        transmuxer.push(new Uint8Array(buffer));
+        transmuxer.flush();
+        appendNext();
+      } catch(e) {
+        console.error('Transmux read file error:', e);
+      }
+    });
+    
+    metaReady = true;
+  } else {
+    var url = URL.createObjectURL(file);
+    videoPlayer.src = url;
+    
+    try {
+      var buffer = await file.arrayBuffer();
+      var bytes = new Uint8Array(buffer);
+      videoMeta = parseMP4Location(bytes);
+    } catch(e) {}
+    metaReady = true;
+  }
+
   videoPlayer.preload = 'metadata';
-  videoPlayer.src = url;
   videoPlayer.load();
   videoPlayer.style.display = '';
   infoBadge.style.display = '';
   infoBadge.textContent = file.name + ' · ' + formatSize(file.size);
-
-  try {
-    var buffer = await file.arrayBuffer();
-    var bytes = new Uint8Array(buffer);
-    videoMeta = parseMP4Location(bytes);
-  } catch(e) {}
-  metaReady = true;
 
   if (videoPlayer.readyState >= 1) { playerReady = true; }
   tryRender();
