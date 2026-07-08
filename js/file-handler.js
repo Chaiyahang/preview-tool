@@ -10,13 +10,19 @@ import { saveCurrentProjectToHistory, updateActiveFileInHistory } from './histor
 
 var HIDDEN_FILES = ['.DS_Store', 'Thumbs.db', '.gitkeep', '__MACOSX'];
 var IMG_EXTS = ['.png', '.jpg', '.jpeg', '.webp', '.gif', '.apng', '.pag', '.svg', '.heic', '.heif', '.avif', '.tiff', '.tif'];
-var VIDEO_EXTS = ['.mp4', '.webm', '.mov', '.mkv', '.ogg', '.avi'];
+var VIDEO_EXTS = ['.mp4', '.webm', '.mov', '.mkv', '.ogg', '.avi', '.ts'];
 var AUDIO_EXTS = ['.mp3', '.wav', '.flac', '.aac', '.m4a', '.wma'];
 var FONT_EXTS = ['.ttf', '.otf', '.woff', '.woff2'];
 
 export function isHiddenFile(name) { if (name.startsWith('.')) return true; return HIDDEN_FILES.some(function(h) { return name === h || name.startsWith(h); }); }
 export function isImageFile(name) { var lower = name.toLowerCase(); return IMG_EXTS.some(function(ext) { return lower.endsWith(ext); }); }
-export function isVideoFile(name) { var lower = name.toLowerCase(); return VIDEO_EXTS.some(function(ext) { return lower.endsWith(ext); }); }
+export function isVideoFile(name) { 
+  var lower = name.toLowerCase(); 
+  if (lower.endsWith('.ts')) {
+    return state.currentMode === 'video';
+  }
+  return VIDEO_EXTS.some(function(ext) { return lower.endsWith(ext); }); 
+}
 export function isAudioFile(name) { var lower = name.toLowerCase(); return AUDIO_EXTS.some(function(ext) { return lower.endsWith(ext); }); }
 export function isFontFile(name) { var lower = name.toLowerCase(); return FONT_EXTS.some(function(ext) { return lower.endsWith(ext); }); }
 

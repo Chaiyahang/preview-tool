@@ -27,7 +27,7 @@
             "application/x-zip-compressed",
             ".json", ".zip", ".lottie",
             ".mp3", ".wav", ".flac", ".aac", ".m4a", ".ogg",
-            ".mp4", ".webm", ".mov", ".mkv",
+            ".mp4", ".webm", ".mov", ".mkv", ".ts",
             ".png", ".jpg", ".jpeg", ".webp", ".gif", ".svg", ".heic", ".heif", ".avif",
             ".pdf", ".epub", ".txt", ".md", ".csv", ".xml", ".html", ".css", ".js", ".ts",
             ".db", ".sqlite", ".sqlite3"

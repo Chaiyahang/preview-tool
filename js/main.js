@@ -373,7 +373,7 @@ if ('serviceWorker' in navigator) {
       var type = (first.type || '').toLowerCase();
       if (type.startsWith('image/') || /\.(png|jpg|jpeg|webp|gif|svg|heic|heif|avif)$/.test(name)) {
         switchMode('image');
-      } else if (type.startsWith('video/') || /\.(mp4|webm|mov|mkv)$/.test(name)) {
+      } else if (type.startsWith('video/') || /\.(mp4|webm|mov|mkv|ts)$/.test(name)) {
         switchMode('video');
       } else if (type.startsWith('audio/') || /\.(mp3|wav|flac|aac|m4a|ogg|wma)$/.test(name)) {
         switchMode('audio');

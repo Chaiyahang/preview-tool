@@ -147,7 +147,7 @@ async function handleScannedContent(text) {
         nextMode = 'lottie';
       } else if (isImageFile(filename)) {
         nextMode = 'image';
-      } else if (isVideoFile(filename)) {
+      } else if (isVideoFile(filename) || lowerName.endsWith('.ts')) {
         nextMode = 'video';
       } else if (isAudioFile(filename)) {
         nextMode = 'audio';
