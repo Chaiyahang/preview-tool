@@ -89,7 +89,12 @@ export async function showVideoPreview(filePath) {
       var transmuxer = new muxjs.mp4.Transmuxer();
       
       transmuxer.on('data', function(segment) {
-        queue.push(segment.data);
+        if (segment.initSegment && segment.initSegment.byteLength > 0) {
+          queue.push(segment.initSegment);
+        }
+        if (segment.data && segment.data.byteLength > 0) {
+          queue.push(segment.data);
+        }
       });
       
       function appendNext() {
