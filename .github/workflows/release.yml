@@ -52,7 +52,7 @@ jobs:
       - name: Build ${{ matrix.target }}
         run: cargo tauri build --bundles ${{ matrix.target }}
 
-      - uses: softprops/action-gh-release@v2
+      - uses: softprops/action-gh-release@v3
         with:
           files: ${{ matrix.artifacts }}
 
@@ -64,13 +64,13 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
 
       - name: Setup Java
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: '17'
 
       - name: Setup Android SDK
-        uses: android-actions/setup-android@v3
+        uses: android-actions/setup-android@v4
 
       - name: Install Tauri CLI
         run: cargo install tauri-cli --version "^2"
@@ -85,7 +85,7 @@ jobs:
       - name: Build Android APK
         run: cargo tauri android build --target aarch64
 
-      - uses: softprops/action-gh-release@v2
+      - uses: softprops/action-gh-release@v3
         with:
           files: src-tauri/gen/android/app/build/outputs/apk/universal/release/*.apk
           generate_release_notes: true

@@ -27,7 +27,7 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
-      - uses: cloudflare/wrangler-action@v3
+      - uses: cloudflare/wrangler-action@v4
         with:
           accountId: b156801868d2ea02453c03296028b59f
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
