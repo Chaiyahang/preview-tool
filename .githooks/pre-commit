@@ -1,0 +1,20 @@
+#!/bin/sh
+# .githooks/pre-commit — preview-tool 提交前自反思校验
+# 通过 git config core.hooksPath .githooks 启用；或手动 cp 到 .git/hooks/pre-commit
+# 校验：JS 语法 / CDN 依赖版本锁定 / TAB_MODES 与 state.modeState 一致性
+# 设置 SKIP_PRECOMMIT=1 可临时绕过。
+
+[ -n "$SKIP_PRECOMMIT" ] && exit 0
+
+if ! command -v node >/dev/null 2>&1; then
+  echo "⚠ 未找到 node，跳过 preview-tool 校验（提交仍继续）"
+  exit 0
+fi
+
+ROOT=$(git rev-parse --show-toplevel 2>/dev/null)
+if [ -z "$ROOT" ]; then
+  echo "⚠ 不在 git 仓库内，跳过校验"
+  exit 0
+fi
+
+node "$ROOT/scripts/validate.mjs"
