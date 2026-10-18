@@ -1,6 +1,7 @@
 // preview-file.js — File, PDF, EPUB preview
 import { state, hideAllPreviews } from './main.js';
 import { formatSize, infoItem } from './preview-image.js';
+import { escapeHtml } from './utils.js';
 
 // Strip line numbers from copy — ::before counters get included in selection
 document.addEventListener('copy', function(e) {
@@ -39,7 +40,7 @@ function hexDump(buffer) {
       if (offset + j < bytes.length) {
         var b = bytes[offset + j];
         hex += (b < 16 ? '0' : '') + b.toString(16) + ' ';
-        ascii += (b >= 0x20 && b < 0x7F) ? String.fromCharCode(b) : '.';
+        ascii += (b >= 0x20 && b < 0x7F) ? escapeHtml(String.fromCharCode(b)) : '.';
       } else { hex += '   '; ascii += ' '; }
     }
     lines.push('<span class="hex-line"><span class="hex-offset">' + ('00000000' + offset.toString(16)).slice(-8) + '</span><span class="hex-bytes">' + hex + '</span><span class="hex-ascii">|' + ascii + '|</span></span>');
@@ -71,15 +72,17 @@ export async function showDocPreview(file, type) {
   docEmbed.data = '';
   var container = document.getElementById('preview-doc');
   var oldIframe = container.querySelector('.pdf-iframe');
-  if (oldIframe) oldIframe.remove();
+  if (oldIframe) { if (oldIframe.dataset.blobUrl) URL.revokeObjectURL(oldIframe.dataset.blobUrl); oldIframe.remove(); }
   var pdfIframe = document.createElement('iframe');
   pdfIframe.className = 'pdf-iframe';
   pdfIframe.style.cssText = 'flex:1;width:100%;border:none;background:#fff';
-  pdfIframe.src = URL.createObjectURL(file);
+  var pdfUrl = URL.createObjectURL(file);
+  pdfIframe.dataset.blobUrl = pdfUrl;
+  pdfIframe.src = pdfUrl;
   container.appendChild(pdfIframe);
   var headerHtml = '';
-  headerHtml += '<span class="fph-item"><span class="fph-label">Name:</span><span class="fph-value">' + file.name + '</span></span>';
-  headerHtml += '<span class="fph-item"><span class="fph-label">Format:</span><span class="fph-value" style="color:var(--accent)">' + type.toUpperCase() + '</span></span>';
+  headerHtml += '<span class="fph-item"><span class="fph-label">Name:</span><span class="fph-value">' + escapeHtml(file.name) + '</span></span>';
+  headerHtml += '<span class="fph-item"><span class="fph-label">Format:</span><span class="fph-value" style="color:var(--accent)">' + escapeHtml(type.toUpperCase()) + '</span></span>';
   headerHtml += '<span class="fph-item"><span class="fph-label">Size:</span><span class="fph-value">' + formatSize(file.size) + '</span></span>';
   docInfoHeader.innerHTML = headerHtml;
 }
@@ -146,19 +149,19 @@ export async function showEpubPreview(file) {
     docIframe.style.display = '';
     docEmbed.style.display = 'none';
     docEmbed.data = '';
-    docIframe.setAttribute('sandbox', 'allow-scripts allow-same-origin');
+    docIframe.setAttribute('sandbox', '');
     docIframe.srcdoc = fullHtml;
     docIframe.src = '';
     var headerHtml = '';
-    headerHtml += '<span class="fph-item"><span class="fph-label">Title:</span><span class="fph-value">' + title + '</span></span>';
-    headerHtml += '<span class="fph-item"><span class="fph-label">Author:</span><span class="fph-value">' + creator + '</span></span>';
+    headerHtml += '<span class="fph-item"><span class="fph-label">Title:</span><span class="fph-value">' + escapeHtml(title) + '</span></span>';
+    headerHtml += '<span class="fph-item"><span class="fph-label">Author:</span><span class="fph-value">' + escapeHtml(creator) + '</span></span>';
     headerHtml += '<span class="fph-item"><span class="fph-label">Format:</span><span class="fph-value" style="color:var(--amber)">EPUB</span></span>';
     headerHtml += '<span class="fph-item"><span class="fph-label">Size:</span><span class="fph-value">' + formatSize(file.size) + '</span></span>';
     headerHtml += '<span class="fph-item"><span class="fph-label">Chapters:</span><span class="fph-value">' + spineIds.length + '</span></span>';
     docInfoHeader.innerHTML = headerHtml;
     infoBadge.textContent = 'EPUB · ' + title + ' · ' + spineIds.length + ' chapters';
   } catch(e) {
-    docInfoHeader.innerHTML = '<span class="fph-item"><span class="fph-label">Error:</span><span class="fph-value" style="color:var(--destructive)">' + e.message + '</span></span>';
+    docInfoHeader.innerHTML = '<span class="fph-item"><span class="fph-label">Error:</span><span class="fph-value" style="color:var(--destructive)">' + escapeHtml(e.message) + '</span></span>';
     infoBadge.textContent = 'EPUB · Error';
   }
 }
@@ -188,7 +191,7 @@ export async function showFilePreview(filePath) {
   infoBadge.textContent = file.name + ' · ' + formatSize(file.size);
   var buffer = await file.arrayBuffer();
   var headerHtml = '';
-  headerHtml += '<span class="fph-item"><span class="fph-label">Name:</span><span class="fph-value">' + file.name + '</span></span>';
+  headerHtml += '<span class="fph-item"><span class="fph-label">Name:</span><span class="fph-value">' + escapeHtml(file.name) + '</span></span>';
   headerHtml += '<span class="fph-item"><span class="fph-label">Size:</span><span class="fph-value">' + formatSize(file.size) + '</span></span>';
   if (isBinary(buffer)) {
     headerHtml += '<span class="fph-item"><span class="fph-label">Type:</span><span class="fph-value" style="color:var(--amber)">Binary</span></span>';
@@ -254,7 +257,7 @@ async function showSqlitePreview(file) {
   fileContent.style.display = 'none'; fileContent.innerHTML = '';
 
   var headerHtml = '';
-  headerHtml += '<span class="fph-item"><span class="fph-label">Name:</span><span class="fph-value">' + file.name + '</span></span>';
+  headerHtml += '<span class="fph-item"><span class="fph-label">Name:</span><span class="fph-value">' + escapeHtml(file.name) + '</span></span>';
   headerHtml += '<span class="fph-item"><span class="fph-label">Size:</span><span class="fph-value">' + formatSize(file.size) + '</span></span>';
   headerHtml += '<span class="fph-item"><span class="fph-label">Type:</span><span class="fph-value" style="color:var(--accent)">SQLite Database</span></span>';
 
@@ -298,10 +301,9 @@ async function showSqlitePreview(file) {
         }
         table += '</tbody></table>';
         if (totalRows > maxRows) table += '<div style="color:var(--text-muted);font-size:11px;margin-top:-16px;margin-bottom:20px">Showing ' + maxRows + ' of ' + totalRows.toLocaleString() + ' rows</div>';
-        viewer.innerHTML += h3.outerHTML + table;
+        viewer.insertAdjacentHTML('beforeend', table);
       } else {
-        viewer.appendChild(h3);
-        viewer.innerHTML += '<div style="color:var(--text-muted);font-size:12px;margin-bottom:20px">Empty table</div>';
+        viewer.insertAdjacentHTML('beforeend', '<div style="color:var(--text-muted);font-size:12px;margin-bottom:20px">Empty table</div>');
       }
     }
 
@@ -310,6 +312,7 @@ async function showSqlitePreview(file) {
     var existingViewer = container.querySelector('.sqlite-viewer');
     if (existingViewer) existingViewer.remove();
     container.appendChild(viewer);
+    activeSqliteViewer = viewer;
 
     viewer.addEventListener('click', function(e) {
       var td = e.target.closest('td');
@@ -319,18 +322,22 @@ async function showSqlitePreview(file) {
       if (existing === td) return;
       td.classList.add('cell-expanded');
     });
-    document.addEventListener('click', function handler(e) {
-      if (!viewer.contains(e.target)) {
-        var exp = viewer.querySelector('.cell-expanded');
-        if (exp) exp.classList.remove('cell-expanded');
-      }
-    });
 
   } catch(e) {
-    headerHtml += '<span class="fph-item"><span class="fph-label">Error:</span><span class="fph-value" style="color:var(--destructive)">' + e.message + '</span></span>';
+    headerHtml += '<span class="fph-item"><span class="fph-label">Error:</span><span class="fph-value" style="color:var(--destructive)">' + escapeHtml(e.message) + '</span></span>';
     filePreviewHeader.innerHTML = headerHtml;
   }
 }
 
-function escapeHtml(str) { return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
+// Close the expanded cell when clicking outside the active SQLite viewer.
+// Bound once at module load — showSqlitePreview only updates activeSqliteViewer.
+var activeSqliteViewer = null;
+document.addEventListener('click', function(e) {
+  if (!activeSqliteViewer) return;
+  if (!activeSqliteViewer.isConnected) { activeSqliteViewer = null; return; }
+  if (!activeSqliteViewer.contains(e.target)) {
+    var exp = activeSqliteViewer.querySelector('.cell-expanded');
+    if (exp) exp.classList.remove('cell-expanded');
+  }
+});
 

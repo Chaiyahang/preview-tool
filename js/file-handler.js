@@ -7,6 +7,7 @@ import { showAudioPreview } from './preview-audio.js';
 import { showFontPreview } from './preview-font.js';
 import { showFilePreview } from './preview-file.js';
 import { saveCurrentProjectToHistory, updateActiveFileInHistory } from './history-manager.js';
+import { escapeHtml } from './utils.js';
 
 var HIDDEN_FILES = ['.DS_Store', 'Thumbs.db', '.gitkeep', '__MACOSX'];
 var IMG_EXTS = ['.png', '.jpg', '.jpeg', '.webp', '.gif', '.apng', '.pag', '.svg', '.heic', '.heif', '.avif', '.tiff', '.tif'];
@@ -170,7 +171,7 @@ function renderTreeNode(node, depth, prefix, fileTree) {
     var iconClass = isDir ? 'folder' : (isJson ? 'json' : (isImg ? 'img' : (isVid ? 'folder' : (isAud ? 'folder' : (isFont ? 'img' : 'json')))));
     var iconText = isDir ? '&#128193;' : (isJson ? '{ }' : (isImg ? '&#9632;' : (isVid ? '&#9654;' : (isAud ? '&#9835;' : (isFont ? 'Ag' : '&#128196;')))));
     if (!isDir) { div.style.color = isVid ? 'var(--pink)' : (isAud ? 'var(--amber)' : (isFont ? 'var(--accent)' : (!isJson && !isImg ? 'var(--amber)' : ''))); }
-    div.innerHTML = indent + '<span class="tree-icon ' + iconClass + '">' + iconText + '</span><span class="tree-name">' + key + '</span>';
+    div.innerHTML = indent + '<span class="tree-icon ' + iconClass + '">' + iconText + '</span><span class="tree-name">' + escapeHtml(key) + '</span>';
     div.title = fullPath;
     
     if (!isDir && isJson) { 

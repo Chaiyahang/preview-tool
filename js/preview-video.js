@@ -2,6 +2,9 @@
 import { state, hideAllPreviews } from './main.js';
 import { formatSize, infoItem, reverseGeocode } from './preview-image.js';
 import { parseMP4Location } from './parsers.js';
+import { escapeHtml } from './utils.js';
+
+var lastVideoUrl = null;
 
 function formatDuration(seconds) {
   if (!isFinite(seconds) || seconds < 0) return '—';
@@ -12,8 +15,8 @@ function formatDuration(seconds) {
 
 function renderVideoInfo(videoPlayer, file, videoMeta, videoInfoPanel, infoBadge) {
   var html = '';
-  html += infoItem('Filename', file.name);
-  html += infoItem('Format', (file.name.split('.').pop() || '').toUpperCase());
+  html += infoItem('Filename', escapeHtml(file.name));
+  html += infoItem('Format', escapeHtml((file.name.split('.').pop() || '').toUpperCase()));
   html += infoItem('Resolution', videoPlayer.videoWidth + ' × ' + videoPlayer.videoHeight + ' px');
   html += infoItem('Duration', formatDuration(videoPlayer.duration));
   html += infoItem('File Size', formatSize(file.size));
@@ -32,6 +35,7 @@ function renderVideoInfo(videoPlayer, file, videoMeta, videoInfoPanel, infoBadge
 }
 
 export async function showVideoPreview(filePath) {
+  if (lastVideoUrl) { URL.revokeObjectURL(lastVideoUrl); lastVideoUrl = null; }
   var currentMode = state.currentMode;
   var fileMap = state.fileMap;
   var modeState = state.modeState;
@@ -159,7 +163,8 @@ export async function showVideoPreview(filePath) {
       }
     });
 
-    videoPlayer.src = URL.createObjectURL(mediaSource);
+    lastVideoUrl = URL.createObjectURL(mediaSource);
+    videoPlayer.src = lastVideoUrl;
 
     videoPlayer.onerror = function() {
       if (videoPlayer.error) {
@@ -171,8 +176,8 @@ export async function showVideoPreview(filePath) {
     
     metaReady = true;
   } else {
-    var url = URL.createObjectURL(file);
-    videoPlayer.src = url;
+    lastVideoUrl = URL.createObjectURL(file);
+    videoPlayer.src = lastVideoUrl;
     
     try {
       var buffer = await file.arrayBuffer();

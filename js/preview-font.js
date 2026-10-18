@@ -1,6 +1,7 @@
 // preview-font.js — Font preview logic
 import { state, hideAllPreviews } from './main.js';
 import { formatSize } from './preview-image.js';
+import { escapeHtml } from './utils.js';
 
 var activeFontUrl = null;
 var activeStyleElement = null;
@@ -76,9 +77,9 @@ export async function showFontPreview(file) {
 
   // 3. Render header information
   var headerHtml = '';
-  headerHtml += '<span class="fph-item"><span class="fph-label">Name:</span><span class="fph-value">' + file.name + '</span></span>';
+  headerHtml += '<span class="fph-item"><span class="fph-label">Name:</span><span class="fph-value">' + escapeHtml(file.name) + '</span></span>';
   headerHtml += '<span class="fph-item"><span class="fph-label">Size:</span><span class="fph-value">' + formatSize(file.size) + '</span></span>';
-  headerHtml += '<span class="fph-item"><span class="fph-label">Format:</span><span class="fph-value" style="color:var(--accent)">' + format.toUpperCase() + '</span></span>';
+  headerHtml += '<span class="fph-item"><span class="fph-label">Format:</span><span class="fph-value" style="color:var(--accent)">' + escapeHtml(format.toUpperCase()) + '</span></span>';
   if (fontPreviewHeader) fontPreviewHeader.innerHTML = headerHtml;
 
   var fontTitleText = document.getElementById('font-title-text');

@@ -30,6 +30,7 @@ js/
   preview-video.js      # 视频预览
   preview-file.js       # 文件预览（文本/JSON/二进制 hex/SQLite/PDF/EPUB）
   parsers.js            # 二进制格式解析器（GIF/WebP/PNG/APNG/PAG/HEIF/EXIF/TIFF）
+  utils.js              # 共享纯工具（escapeHtml — 不可信内容进 innerHTML 前必须转义）
 ```
 
 ### 模块化 ES Module
@@ -193,6 +194,8 @@ modeState = {
 ## Constraints
 
 - 无构建工具、无包管理器、无 TypeScript — 纯 vanilla HTML/CSS/JS（ES Module）
+- 安全：文件名/EXIF/EPUB 元数据等不可信字符串拼进 innerHTML 前必须过 `utils.js` 的 `escapeHtml()`；EPUB 预览 iframe 保持 `sandbox=""`（禁止 allow-same-origin/allow-scripts）；Blob URL 遵循「下一次 show 前 revoke 上一次」模式（各 preview 模块的 lastXxxUrl 变量）
+- sw.js：应用壳预缓存 + CDN stale-while-revalidate；新增 js 模块或静态资源时需同步加入 `APP_SHELL` 列表
 - 所有状态存于内存，页面刷新即丢失
 - 隐藏文件过滤：`.DS_Store`、`Thumbs.db`、`__MACOSX`、`.gitkeep`
 - 图片解析基于二进制头部解析，部分格式为占位值（如旧版 PAG）

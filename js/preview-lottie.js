@@ -1,6 +1,7 @@
 // preview-lottie.js — Lottie animation preview
 import { state, hideAllPreviews } from './main.js';
 import { infoItem } from './preview-image.js';
+import { escapeHtml } from './utils.js';
 
 export var lottieABLoop = { a: null, b: null, active: false };
 var isScrubbing = false;
@@ -76,7 +77,7 @@ export async function playJson(jsonPath) {
     html += infoItem('时长', (state.anim.totalFrames / fps).toFixed(2) + 's');
     html += infoItem('总帧数', Math.round(state.anim.totalFrames));
     html += infoItem('帧率', fps + ' fps');
-    html += infoItem('Bodymovin版本', animData.v || '未知');
+    html += infoItem('Bodymovin版本', escapeHtml(animData.v || '未知'));
     html += infoItem('总图层数', totalLayers);
     if (imageAssets.length > 0) {
       var statusText = (group && group.images.size > 0) ? '已关联' : '未关联/缺失';

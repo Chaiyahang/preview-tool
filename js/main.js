@@ -148,7 +148,7 @@ function resetAll() {
   cleanupAudio(); document.getElementById('audio-info-panel').innerHTML = '';
   fileContent.innerHTML = ''; fileHex.innerHTML = ''; fileHex.classList.add('hidden'); filePreviewHeader.innerHTML = '';
   docIframe.src = ''; docIframe.srcdoc = ''; docEmbed.data = ''; docInfoHeader.innerHTML = '';
-  var oldPdfIframe = document.querySelector('.pdf-iframe'); if (oldPdfIframe) oldPdfIframe.remove();
+  var oldPdfIframe = document.querySelector('.pdf-iframe'); if (oldPdfIframe) { if (oldPdfIframe.dataset.blobUrl) URL.revokeObjectURL(oldPdfIframe.dataset.blobUrl); oldPdfIframe.remove(); }
   
   // Font cleanups
   var fontSpecimenInput = document.getElementById('font-specimen-input');

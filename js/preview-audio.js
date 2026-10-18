@@ -1,12 +1,14 @@
 // preview-audio.js — Audio preview with waveform visualization
 import { state, hideAllPreviews } from './main.js';
 import { formatSize, infoItem } from './preview-image.js';
+import { escapeHtml } from './utils.js';
 
 var audioCtx = null;
 var waveformRAF = null;
 var audioBuffer = null;
 var analyser = null;
 var mediaSource = null;
+var lastAudioUrl = null;
 var abLoop = { a: null, b: null, active: false };
 
 function getAudioContext() {
@@ -218,6 +220,7 @@ function fmtTime(sec) {
 }
 
 export async function showAudioPreview(filePath) {
+  if (lastAudioUrl) { URL.revokeObjectURL(lastAudioUrl); lastAudioUrl = null; }
   var fileMap = state.fileMap;
   var modeState = state.modeState;
   modeState[state.currentMode].activeFile = filePath;
@@ -235,8 +238,8 @@ export async function showAudioPreview(filePath) {
 
   cancelAnimationFrame(waveformRAF);
   audioPlayer.pause();
-  var url = URL.createObjectURL(file);
-  audioPlayer.src = url;
+  lastAudioUrl = URL.createObjectURL(file);
+  audioPlayer.src = lastAudioUrl;
   audioPlayer.load();
   audioPlayer.playbackRate = 1;
   infoBadge.style.display = '';
@@ -263,8 +266,8 @@ export async function showAudioPreview(filePath) {
     var ext = (file.name.split('.').pop() || '').toUpperCase();
     var bitrate = estimateBitrate(file, audioBuffer.duration);
     var html = '';
-    html += infoItem('Filename', file.name);
-    html += infoItem('Format', ext);
+    html += infoItem('Filename', escapeHtml(file.name));
+    html += infoItem('Format', escapeHtml(ext));
     html += infoItem('Duration', audioBuffer.duration.toFixed(1) + 's');
     html += infoItem('Sample Rate', (audioBuffer.sampleRate / 1000).toFixed(1) + ' kHz');
     html += infoItem('Channels', audioBuffer.numberOfChannels === 1 ? 'Mono' : (audioBuffer.numberOfChannels === 2 ? 'Stereo' : audioBuffer.numberOfChannels + 'ch'));
@@ -273,7 +276,7 @@ export async function showAudioPreview(filePath) {
     infoPanel.innerHTML = html;
     infoBadge.textContent = ext + ' · ' + audioBuffer.duration.toFixed(1) + 's · ' + (bitrate ? bitrate + 'kbps · ' : '') + (audioBuffer.sampleRate / 1000).toFixed(1) + 'kHz · ' + (audioBuffer.numberOfChannels === 1 ? 'Mono' : 'Stereo');
   } catch(e) {
-    infoPanel.innerHTML = infoItem('Filename', file.name) + infoItem('File Size', formatSize(file.size));
+    infoPanel.innerHTML = infoItem('Filename', escapeHtml(file.name)) + infoItem('File Size', formatSize(file.size));
   }
 
   audioPlayer.onplay = function() { renderFrame(canvas, audioPlayer.currentTime / audioPlayer.duration, true); };
@@ -315,6 +318,7 @@ export async function showAudioPreviewFromUrl(url) {
     alert('请输入以 http:// 或 https:// 开头的有效音频 URL');
     return;
   }
+  if (lastAudioUrl) { URL.revokeObjectURL(lastAudioUrl); lastAudioUrl = null; }
 
   var ext = guessExtFromUrl(url);
   var fileName = fileNameFromUrl(url);
@@ -349,7 +353,7 @@ export async function showAudioPreviewFromUrl(url) {
   canvas.height = 160;
 
   audioBuffer = null;
-  infoPanel.innerHTML = infoItem('Filename', fileName) + infoItem('Source', url) + '<div class="audio-url-loading">正在加载波形数据...</div>';
+  infoPanel.innerHTML = infoItem('Filename', escapeHtml(fileName)) + infoItem('Source', '<a href="' + escapeHtml(url) + '" target="_blank" rel="noopener" style="color:var(--accent)">' + escapeHtml(url) + '</a>') + '<div class="audio-url-loading">正在加载波形数据...</div>';
 
   try {
     var resp = await fetch(url);
@@ -361,18 +365,18 @@ export async function showAudioPreviewFromUrl(url) {
 
     var bitrate = estimateBitrate({ size: arrayBuf.byteLength }, audioBuffer.duration);
     var html = '';
-    html += infoItem('Filename', fileName);
-    html += infoItem('Format', (ext || '—').toUpperCase());
+    html += infoItem('Filename', escapeHtml(fileName));
+    html += infoItem('Format', escapeHtml((ext || '—').toUpperCase()));
     html += infoItem('Duration', audioBuffer.duration.toFixed(1) + 's');
     html += infoItem('Sample Rate', (audioBuffer.sampleRate / 1000).toFixed(1) + ' kHz');
     html += infoItem('Channels', audioBuffer.numberOfChannels === 1 ? 'Mono' : (audioBuffer.numberOfChannels === 2 ? 'Stereo' : audioBuffer.numberOfChannels + 'ch'));
     if (bitrate) html += infoItem('Bitrate', bitrate + ' kbps');
     html += infoItem('Size', formatSize(arrayBuf.byteLength));
-    html += infoItem('Source', '<a href="' + url + '" target="_blank" rel="noopener" style="color:var(--accent)">在线链接</a>');
+    html += infoItem('Source', '<a href="' + escapeHtml(url) + '" target="_blank" rel="noopener" style="color:var(--accent)">' + escapeHtml(url) + '</a>');
     infoPanel.innerHTML = html;
     infoBadge.textContent = (ext ? ext.slice(1).toUpperCase() + ' · ' : '') + audioBuffer.duration.toFixed(1) + 's · ' + (bitrate ? bitrate + 'kbps · ' : '') + (audioBuffer.sampleRate / 1000).toFixed(1) + 'kHz · ' + (audioBuffer.numberOfChannels === 1 ? 'Mono' : 'Stereo');
   } catch(e) {
-    infoPanel.innerHTML = infoItem('Filename', fileName) + infoItem('Source', '<a href="' + url + '" target="_blank" rel="noopener" style="color:var(--accent)">在线链接</a>') + infoItem('Waveform', '无法加载（跨域限制）');
+    infoPanel.innerHTML = infoItem('Filename', escapeHtml(fileName)) + infoItem('Source', '<a href="' + escapeHtml(url) + '" target="_blank" rel="noopener" style="color:var(--accent)">' + escapeHtml(url) + '</a>') + infoItem('Waveform', '无法加载（跨域限制）');
   }
 
   audioPlayer.onplay = function() { renderFrame(canvas, audioPlayer.currentTime / audioPlayer.duration, true); };
@@ -391,6 +395,7 @@ export function cleanupAudio() {
   audioBuffer = null;
   abLoop.a = null; abLoop.b = null; abLoop.active = false;
   isSeeking = false;
+  if (lastAudioUrl) { URL.revokeObjectURL(lastAudioUrl); lastAudioUrl = null; }
   var audioPlayer = document.getElementById('audio-player');
   if (audioPlayer) { audioPlayer.pause(); audioPlayer.src = ''; }
   var ctrl = document.getElementById('audio-controls');

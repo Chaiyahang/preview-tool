@@ -1,10 +1,12 @@
 // preview-image.js — Image preview functionality
 import { parseExifData, parseEXIF, parseGIF, parseWebP, parsePNG, parsePAG, parsePAGAsync, parseHEIF } from './parsers.js';
 import { state, hideAllPreviews } from './main.js';
+import { escapeHtml } from './utils.js';
 
 export var svgCodeText = "";
 
 var previewCallId = 0;
+var lastImageUrl = null;
 
 export function infoItem(label, value) { return '<div class="img-info-item"><span class="label">' + label + '</span><span class="value">' + value + '</span></div>'; }
 export function formatSize(bytes) { if (bytes < 1024) return bytes + ' B'; if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' KB'; return (bytes / 1048576).toFixed(2) + ' MB'; }
@@ -96,6 +98,7 @@ export async function showImagePreview(filePath) {
   disableColorPicker();
 
   var thisCallId = ++previewCallId;
+  if (lastImageUrl) { URL.revokeObjectURL(lastImageUrl); lastImageUrl = null; }
   var currentMode = state.currentMode;
   var fileMap = state.fileMap;
   var modeState = state.modeState;
@@ -131,10 +134,11 @@ export async function showImagePreview(filePath) {
     try { await renderPAGPreview(file, imgPreviewEl); }
     catch(e) { imgPreviewEl.src = ''; }
   } else if (lower.endsWith('.heic') || lower.endsWith('.heif')) {
-    try { var blob = await window.heic2any({ blob: file, toType: 'image/jpeg', quality: 0.92 }); if (previewCallId !== thisCallId) return; imgPreviewEl.src = URL.createObjectURL(blob); }
+    try { var blob = await window.heic2any({ blob: file, toType: 'image/jpeg', quality: 0.92 }); if (previewCallId !== thisCallId) return; lastImageUrl = URL.createObjectURL(blob); imgPreviewEl.src = lastImageUrl; }
     catch(e) { imgPreviewEl.src = ''; }
-  } else { 
-    imgPreviewEl.src = URL.createObjectURL(file); 
+  } else {
+    lastImageUrl = URL.createObjectURL(file);
+    imgPreviewEl.src = lastImageUrl;
     if (lower.endsWith('.svg')) {
       try {
         svgCodeText = await file.text();
@@ -165,10 +169,10 @@ export async function showImagePreview(filePath) {
   if (info.colorType) html += infoItem('Color Type', info.colorType);
   if (info.bitDepth > 0) html += infoItem('Bit Depth', info.bitDepth + '-bit');
   if (info.hasAlpha) html += infoItem('Alpha', 'Yes');
-  if (info.gifVersion) html += infoItem('GIF Version', info.gifVersion);
+  if (info.gifVersion) html += infoItem('GIF Version', escapeHtml(info.gifVersion));
   if (info.animated) { html += infoItem('Animated', 'Yes'); if (info.frames > 0) html += infoItem('Frames', info.frames); if (info.duration > 0) html += infoItem('Duration', info.duration.toFixed(2) + 's'); if (info.frames > 0 && info.duration > 0) html += infoItem('FPS', (info.frames / info.duration).toFixed(1)); if (info.loopCount >= 0) html += infoItem('Loop Count', info.loopCount === 0 ? '∞ (Infinite)' : info.loopCount); }
-  if (info.camera) html += infoItem('Camera', info.camera);
-  if (info.dateTime) html += infoItem('Date Taken', info.dateTime);
+  if (info.camera) html += infoItem('Camera', escapeHtml(info.camera));
+  if (info.dateTime) html += infoItem('Date Taken', escapeHtml(info.dateTime));
   if (info.focalLength) { var fl = info.focalLength35 ? info.focalLength + ' mm (' + info.focalLength35 + ' mm eq)' : info.focalLength + ' mm'; html += infoItem('Focal Length', fl); }
   if (info.fNumber) html += infoItem('Aperture', 'f/' + info.fNumber);
   if (info.exposureTime) html += infoItem('Shutter', info.exposureTime + ' s');
